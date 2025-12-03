@@ -3,685 +3,1096 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Analisi Costo di Produzione — Sticky</title>
+  <title>Analisi Costo di Produzione — Ultimate V4.1</title>
+  
+  <!-- SheetJS per Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Chart.js per Grafici -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     :root{
-      --bg:#0b0f14; --panel:#121821; --muted:#1b2430; --ink:#e7edf3; --ink-2:#b7c2cf; --acc:#4cc9f0; --ok:#2dd4bf; --warn:#f59e0b; --err:#ef4444; --grid:#263042; --shadow: 0 8px 24px rgba(0,0,0,.3);
-      /* altezze sticky */
-      --sticky1: 128px;   /* barra titolo in alto */
-      --sticky2: 56px;   /* testata "Voci di costo" con pulsanti */
+      --bg:#0b0f14; --panel:#121821; --muted:#1b2430; 
+      --ink:#e7edf3; --ink-2:#b7c2cf; 
+      --acc:#4cc9f0; --ok:#2dd4bf; --warn:#f59e0b; --err:#ef4444; 
+      --grid:#263042; 
+      --shadow: 0 8px 24px rgba(0,0,0,.4);
+      
+      /* Z-Index Layers */
+      --z-modal: 2000;
+      --z-toolbar: 100;
+      --z-thead: 90;
     }
-    *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;background:linear-gradient(180deg,#0b0f14,#0c121b 60%,#0b0f14);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
-    .wrap{max-width:1220px;margin:24px auto;padding:16px}
-    .card{background:var(--panel);border:1px solid var(--grid);border-radius:16px;box-shadow:var(--shadow)}
-    .h{display:flex;gap:12px;align-items:center}
-    h1{font-size:24px;margin:0 0 8px}
-    h2{font-size:16px;margin:0 0 8px;color:var(--ink-2);font-weight:600}
-    .sub{color:var(--ink-2);font-size:12px}
-    .row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
-    .pad{padding:16px}
-    .toolbar{display:flex;flex-wrap:wrap;gap:8px}
+
+    * { box-sizing:border-box; }
+    html,body { height:100%; margin:0; padding:0; }
     
-    .toolbar-split{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
-    .toolbar-col{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-
-button, .btn{background:#192233;border:1px solid var(--grid);color:var(--ink);padding:8px 10px;border-radius:12px;cursor:pointer}
-    button:hover{border-color:#31415a}
-    .btn-primary{background:linear-gradient(180deg,#1b2a44,#182338);border-color:#35507c}
-    .btn-acc{background:linear-gradient(180deg,#113548,#0e2e3f);border-color:#1f5c78;color:#c6f1ff}
-    .btn-ok{background:linear-gradient(180deg,#0f3b33,#0b2d28);border-color:#1d6d5e}
-    .btn-warn{background:linear-gradient(180deg,#3e2e15,#2f220f);border-color:#7d5b1b}
-    .grid{width:100%;border-collapse:separate;border-spacing:0}
-    .grid th,.grid td{border-bottom:1px dashed var(--grid);padding:8px 10px;vertical-align:middle}
-    /* IMPORTANTE: header tabella sotto alle barre sticky */
-    .grid thead th{position:sticky;top:calc(var(--sticky1) + var(--sticky2));background:linear-gradient(180deg,#0f1622,#0c121b);z-index:120;text-align:left;border-bottom:1px solid var(--grid);box-shadow:0 6px 14px rgba(0,0,0,.35);font-weight:700;letter-spacing:.02em}
-    .grid thead th:first-child{text-align:center}
-    .grid thead tr::after{content:"";position:sticky;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,#31415a,transparent);display:block}
-
-    .grid tbody tr:hover{background:#121a27}
-    .right{text-align:right}
-    .num{font-variant-numeric: tabular-nums}
-    .muted{color:var(--ink-2)}
-    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--grid);border-radius:999px;background:#121a27}
-    .kv{display:grid;grid-template-columns:200px 1fr;gap:8px 12px}
-    input,select,textarea{width:100%;background:#0f1520;border:1px solid var(--grid);color:var(--ink);padding:8px 10px;border-radius:12px;outline:none}
-    input:focus,select:focus,textarea:focus{border-color:#365178;box-shadow:0 0 0 3px rgba(76,201,240,.15)}
-    .chips{display:flex;gap:8px;flex-wrap:wrap}
-    .badge{padding:2px 8px;border:1px solid var(--grid);border-radius:999px;background:#0e1724;color:#9fb0c7}
-    .totale{font-size:18px;font-weight:700}
-    .soft{opacity:.7}
-    .footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;color:#9fb0c7}
-    .small{font-size:12px}
-    .hr{height:1px;background:linear-gradient(90deg,transparent,#263042,transparent);margin:12px 0}
-    .nowrap{white-space:nowrap}
-    .sel{outline:2px solid #35507c}
-    .selftest{position:fixed;right:12px;bottom:12px;padding:6px 10px;border-radius:999px;font-size:12px}
-    .ok{background:#073b2a;color:#a7f3d0;border:1px solid #0d5e43}
-    .err{background:#3b0710;color:#fecaca;border:1px solid #7f1d1d}
-    .tests{position:fixed;left:12px;bottom:12px;padding:6px 10px;border-radius:12px;font-size:12px;background:#121821;border:1px solid #263042;max-width:50vw}
-
-    /* ==== NUOVE BARRE STICKY ==== */
-    .topbar{position:sticky;top:0;z-index:100;background:linear-gradient(180deg,#131a24,#0f1621);border:1px solid var(--grid);border-radius:16px;box-shadow:var(--shadow);height:var(--sticky1);display:flex;align-items:center;padding:10px 16px;margin-bottom:12px}
-    .topbar .h{align-items:center}
-    .cost-head-sticky{position:sticky;top:var(--sticky1);z-index:95;background:linear-gradient(180deg,#151d22,#101722);border-bottom:1px solid var(--grid);padding:12px 16px;margin:-16px -16px 0 -16px;min-height:var(--sticky2);display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .cost-head-sticky h2{margin:0}
-    .cost-head-spacer{height:0}
-    @media (max-width:720px){
-      :root{ --sticky1: 140px; --sticky2: 72px; }
-    }
-  
-    /* ==== BARRA COMPATTA INFO COMMESSA (sotto topbar) ==== */
-    .projbar{
-      background:linear-gradient(180deg,#121a24,#0f1621);
-      border:1px solid var(--grid);
-      border-radius:14px;
-      box-shadow:var(--shadow);
-      padding:10px 16px;
-      margin-bottom:12px;
-      display:grid;
-      grid-template-columns:repeat(12,1fr);
-      gap:10px;
-    }
-    .projbar .fld{display:flex;flex-direction:column;gap:6px}
-    .projbar label{font-size:12px;color:var(--ink-2)}
-    @media (max-width:900px){
-      .projbar{grid-template-columns:1fr 1fr}
-    }
-    @media (max-width:560px){
-      .projbar{grid-template-columns:1fr}
+    body {
+      background: linear-gradient(180deg,#0b0f14,#0c121b 60%,#0b0f14);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
     }
 
+    .wrap { max-width:1280px; margin:0 auto; padding:16px; padding-bottom: 80px; }
+    
+    /* Utility Classes */
+    .card { background:var(--panel); border:1px solid var(--grid); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; }
+    .pad { padding:16px; }
+    .h { display:flex; gap:12px; align-items:center; }
+    .row { display:grid; grid-template-columns:repeat(12,1fr); gap:12px; }
+    .col { display:flex; flex-direction:column; gap:4px; }
+    .hr { height:1px; background:linear-gradient(90deg,transparent,#263042,transparent); margin:16px 0; }
+    .right { text-align:right; }
+    .num { font-variant-numeric: tabular-nums; font-family: "Consolas", monospace; letter-spacing: -0.5px; }
+    .muted { color:var(--ink-2); }
+    .small { font-size:12px; }
+    .nowrap { white-space:nowrap; }
+    .soft { opacity:.7; }
+    .hidden { display:none !important; }
 
-    /* Adattamento layout campi in topbar */
-    .topbar .projbar{
-      background:none;
-      border:none;
-      box-shadow:none;
-      padding:0;
-      margin-left:24px;
-      display:flex;
-      flex-wrap:wrap;
-      align-items:center;
-      gap:12px;
+    /* Typography */
+    h1 { font-size:20px; margin:0; font-weight:700; color:var(--ink); }
+    h2 { font-size:16px; margin:0 0 12px; color:var(--acc); font-weight:600; text-transform:uppercase; letter-spacing:1px; }
+
+    /* Inputs & Form Elements */
+    input, select, textarea {
+      width:100%; background:#0f1520; border:1px solid var(--grid); color:var(--ink);
+      padding:8px 10px; border-radius:8px; outline:none; transition: all 0.2s;
     }
-    .topbar .projbar .fld{flex:1;min-width:160px}
-    .topbar .projbar label{font-size:11px;color:var(--ink-2)}
-    .topbar .projbar input{height:30px;font-size:13px;padding:4px 8px}
+    input:focus, select:focus { border-color:var(--acc); box-shadow:0 0 0 2px rgba(76,201,240,.15); }
+    label { font-size:11px; color:var(--ink-2); font-weight:600; text-transform:uppercase; }
 
-
-    /* === Layout aggiornato: titolo su prima riga, campi su riga separata dentro la topbar === */
-    .topbar{height:auto; padding:12px 16px}
-    .topbar .projbar{
-      background:linear-gradient(180deg,#121a24,#0f1621);
-      border:1px solid var(--grid);
-      border-radius:12px;
-      box-shadow:var(--shadow);
-      padding:10px 12px;
-      margin-top:8px;
-      display:grid;
-      grid-template-columns:repeat(12,1fr);
-      gap:10px;
+    /* Buttons */
+    button, .btn {
+      background:#192233; border:1px solid var(--grid); color:var(--ink);
+      padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:500;
+      transition: background 0.2s;
     }
-    .topbar .projbar .fld{display:flex;flex-direction:column;gap:6px}
-    .topbar .projbar label{font-size:12px;color:var(--ink-2)}
-    .topbar .projbar input{height:32px;font-size:13px;padding:6px 10px}
-    @media (max-width:900px){
-      .topbar .projbar{grid-template-columns:1fr 1fr}
+    button:hover { background:#2a3649; border-color:#35507c; }
+    .btn-primary { background:var(--acc); color:#000; border-color:var(--acc); font-weight:700; }
+    .btn-primary:hover { background:#2ac0eb; }
+    .btn-acc { background:rgba(76,201,240,0.1); border-color:var(--acc); color:var(--acc); }
+    .btn-acc:hover { background:rgba(76,201,240,0.2); }
+    .btn-ok { background:rgba(45,212,191,0.1); border-color:var(--ok); color:var(--ok); }
+    .btn-ok:hover { background:rgba(45,212,191,0.2); }
+    .btn-warn { background:rgba(245,158,11,0.1); border-color:var(--warn); color:var(--warn); }
+    .btn-icon { padding: 8px; width: 36px; text-align: center; }
+    
+    /* --- LAYOUT FIX --- */
+    .topbar {
+      position: relative; 
+      background: linear-gradient(180deg,#131a24 0%,#0f1621 100%);
+      border: 1px solid var(--grid); border-radius: 12px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      padding: 12px 16px;
     }
-    @media (max-width:560px){
-      .topbar .projbar{grid-template-columns:1fr}
+    
+    .projbar {
+      display:grid; grid-template-columns:repeat(12,1fr); gap:10px;
+      margin-top:12px; padding-top:12px; border-top:1px dashed var(--grid);
     }
 
-
-/* === Abachi Revit Tabs === */
-#abachi-tabs .tab{
-  background:#192233;border:1px solid var(--grid);border-radius:10px;padding:6px 10px;cursor:pointer
-}
-#abachi-tabs .tab.active{outline:2px solid #35507c}
-#abachi-host .sheet{display:none; overflow:auto; border:1px solid var(--grid); border-radius:12px; padding:8px; background:#0f1520}
-#abachi-host .sheet.active{display:block}
-#abachi-host table{width:100%; border-collapse:separate; border-spacing:0}
-#abachi-host th, #abachi-host td{border-bottom:1px dashed var(--grid); padding:6px 8px; vertical-align:middle}
-
-</style>
-  <!-- SheetJS per esportazione XLSX con formati numerici/valuta -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
-
-
-// Auto K o.c. = 10 se la categoria contiene "Montaggio", "Trasporti" o "Opere Complementari" (case-insensitive)
-tbody.addEventListener('input', e => {
-  const td = e.target.closest('[contenteditable][data-key="categoria"]');
-  if (!td) return;
-  const val = (td.textContent || '').toLowerCase();
-  const hasMatch = val.includes('montaggio') || val.includes('trasport') || val.includes('opere complementari');
-  if (hasMatch) {
-    const tr = td.closest('tr');
-    const kCell = tr.querySelector('[data-key="koc"]');
-    if (kCell) {
-      kCell.textContent = '10,00';
-      applySummary();
-      save();
+    /* Table & Grid */
+    .table-container { position:relative; overflow:visible; }
+    
+    .cost-head-sticky {
+      position: sticky; 
+      top: 0; 
+      z-index: var(--z-toolbar);
+      background: #121821; 
+      border-bottom: 1px solid var(--grid);
+      padding: 12px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      margin: 0 -16px; 
+      width: calc(100% + 32px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-  }
-});
 
-</script>
+    table.grid { width:100%; border-collapse:separate; border-spacing:0; }
+    .grid th, .grid td { border-bottom:1px dashed var(--grid); padding:8px 10px; vertical-align:middle; }
+    .grid th { text-align:left; font-weight:600; color:var(--ink-2); font-size:12px; text-transform:uppercase; }
+    
+    .grid thead th {
+      position: sticky;
+      top: 65px; 
+      z-index: var(--z-thead);
+      background: #151d28; 
+      border-bottom: 2px solid var(--grid);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .grid tbody tr:hover { background:rgba(255,255,255,0.03); }
+    .grid tbody tr.sel { background:rgba(76,201,240,0.1); }
+    
+    [contenteditable] { cursor:text; border-radius:4px; padding:2px 4px; }
+    [contenteditable]:focus { background:#000; outline:1px solid var(--acc); color:var(--acc); }
 
-<!-- Calcola fisso: stile minimale -->
-<style id="calc-fixed-style">
-#btn-calc-fixed{
-  position:fixed;top:14px;right:16px;z-index:9999;
-  display:flex;align-items:center;gap:6px;
-  padding:10px 16px;border-radius:14px;
-  background:linear-gradient(180deg,#113548,#0e2e3f);
-  border:1px solid #1f5c78;color:#c6f1ff;
-  box-shadow:0 0 12px rgba(0,0,0,.5);cursor:pointer
-}
-#btn-calc-fixed:hover{border-color:#4cc9f0}
-</style>
+    /* Totals Footer */
+    .grid tfoot th { text-align:right; color:var(--ink-2); padding-top:12px; border-bottom:none; }
+    .grid tfoot td, .grid tfoot .num { font-size:15px; font-weight:700; color:var(--ink); border-bottom:none; padding-top:12px; }
 
+    /* Key-Value Grid for Summary */
+    .kv-grid { display:grid; grid-template-columns: 1fr 120px; gap:8px 16px; align-items:center; }
+    .kv-grid label { font-size:12px; color:var(--ink-2); font-weight:normal; text-transform:none; }
+    .kv-grid .val { text-align:right; font-family:"Consolas", monospace; font-size:13px; }
+
+    /* Calc Float Button */
+    #btn-calc-fixed {
+      position:fixed; bottom:24px; right:24px; z-index:999;
+      background:var(--acc); color:#000; 
+      width:56px; height:56px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:24px; box-shadow:0 10px 30px rgba(76,201,240,0.4);
+      border:none; cursor:pointer; transition:transform 0.2s;
+    }
+    #btn-calc-fixed:hover { transform:scale(1.1); }
+    #btn-calc-fixed:active { transform:scale(0.95); }
+
+    /* Abachi Tabs */
+    #abachi-tabs { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; border-bottom:1px solid var(--grid); margin-bottom:12px; }
+    #abachi-tabs button { white-space:nowrap; }
+    #abachi-tabs button.active { background:var(--acc); color:#000; border-color:var(--acc); }
+    #abachi-host .sheet { display:none; max-height:500px; overflow:auto; background:#fff; color:#000; padding:16px; border-radius:8px; }
+    #abachi-host .sheet.active { display:block; }
+    #abachi-host table { border-collapse:collapse; width:100%; font-size:12px; }
+    #abachi-host td, #abachi-host th { border:1px solid #ccc; padding:4px; }
+
+    /* Custom Modal */
+    .modal-overlay { 
+      position:fixed; top:0; left:0; width:100%; height:100%; 
+      background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
+      z-index: var(--z-modal); display:flex; align-items:center; justify-content:center;
+      opacity:0; pointer-events:none; transition:opacity 0.2s ease-out;
+    }
+    .modal-overlay.active { opacity:1; pointer-events:all; }
+    .modal { 
+      background:#161f2b; border:1px solid var(--grid); 
+      padding:24px; border-radius:16px; max-width:420px; width:90%; 
+      box-shadow:0 25px 50px rgba(0,0,0,0.6); 
+      transform:translateY(20px); transition:transform 0.2s ease-out;
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .modal-overlay.active .modal { transform:translateY(0); }
+    .modal h3 { margin:0; color:var(--ink); font-size:18px; }
+    .modal p { color:var(--ink-2); line-height:1.5; margin:0; }
+    .modal-actions { display:flex; justify-content:flex-end; gap:12px; margin-top:12px; }
+    
+    /* Catalog List Style inside Modal */
+    .catalog-list { max-height:300px; overflow-y:auto; border:1px solid var(--grid); border-radius:8px; margin-top:8px; }
+    .catalog-item { padding:8px; border-bottom:1px solid var(--grid); cursor:pointer; display:flex; justify-content:space-between; }
+    .catalog-item:hover { background:var(--muted); }
+    .catalog-item:last-child { border-bottom:none; }
+
+    /* Stat Cards */
+    .stat-card {
+      background: #151d28; border: 1px solid var(--grid);
+      border-radius: 12px; padding: 12px; display:flex; flex-direction:column; gap:4px;
+    }
+    .stat-val { font-size:20px; font-weight:bold; color:#fff; }
+    .stat-lbl { font-size:11px; color:var(--ink-2); text-transform:uppercase; letter-spacing:0.5px; }
+
+    /* --- PRINT STYLES (NEW) --- */
+    @media print {
+      body { background: #fff !important; color: #000 !important; font-family: "Times New Roman", serif; font-size: 11pt; }
+      .wrap { max-width: 100% !important; margin: 0; padding: 0; }
+      .card { border: none !important; box-shadow: none !important; border-radius: 0 !important; background: none !important; margin-bottom: 20px !important; }
+      /* Hide UI Elements */
+      .topbar button, .cost-head-sticky, #btn-calc-fixed, 
+      .modal-overlay, #abachi-card, #scenarios-card, .stat-card, canvas, #btn-save-as { display: none !important; }
+      .topbar { border:none; box-shadow:none; background:none; padding:0; margin-bottom:10px; }
+      .projbar { border-top: 1px solid #000; padding-top: 10px; margin-top: 10px; }
+      input, select, textarea { border: none !important; background: none !important; color: #000 !important; padding: 0 !important; font-weight: bold; width: auto !important; -webkit-appearance: none; }
+      label { color: #444 !important; font-size: 9pt; }
+      table.grid { width: 100%; border-collapse: collapse; border: 1px solid #000; }
+      .grid th, .grid td { border: 1px solid #ccc !important; padding: 4px; color: #000 !important; }
+      .grid thead th { background: #eee !important; color: #000 !important; position: static !important; }
+      /* Force Colors */
+      #r-totale, #r-netto { color: #000 !important; }
+      /* Hide "Statistiche Avanzate" title if card is hidden */
+      h2 { color: #000 !important; border-bottom: 1px solid #000; padding-bottom: 4px; }
+      /* Footer */
+      .footer-print { display: block !important; text-align: center; font-size: 9pt; margin-top: 30px; border-top: 1px solid #000; padding-top: 10px; }
+    }
+    .footer-print { display: none; }
+
+    @media (max-width: 900px) {
+       .projbar { grid-template-columns: repeat(2, 1fr); }
+       .row { display:flex; flex-direction:column; }
+       @media (max-height: 500px) {
+         .cost-head-sticky, .grid thead th { position:static; }
+       }
+    }
+  </style>
 </head>
 <body>
 
-<!-- Pulsante Calcola fisso, sempre visibile -->
-<button id="btn-calc-fixed" class="btn-acc" aria-label="Calcola (sempre visibile)">
-  <span style="font-size:16px">🧮</span><span>Calcola</span>
-</button>
+<!-- Floating Calc Button -->
+<button id="btn-calc-fixed" title="Calcola">🧮</button>
 
-  <div class="wrap">
-    <!-- Barra titolo STICKY -->
-    <div class="topbar">
-      <div class="h">
-        <div class="pill"><b>Foglio unico</b></div>
-        <h1 style="margin-left:6px">Analisi Costo di Produzione</h1>
-      <div class="projbar" id="projbar">
-      <div class="fld" style="grid-column: span 4">
-        <label class="muted small">Nome commessa</label>
-        <input id="job-name" type="text" placeholder="es. Capannone Tigros Locate Triulzi" />
-      </div>
-      </div>
+<!-- CUSTOM MODAL HTML -->
+<div id="custom-modal" class="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title">Titolo</h3>
+    <div id="modal-content">
+       <p id="modal-msg">Messaggio...</p>
+    </div>
+    <div class="modal-actions">
+      <button id="modal-cancel" class="btn">Chiudi</button>
+      <button id="modal-confirm" class="btn-primary" style="display:none">Conferma</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="h" style="justify-content:space-between">
+       <div class="h">
+         <div style="background:var(--acc); color:#000; font-weight:bold; padding:4px 8px; border-radius:6px; font-size:12px;">V4.1 Ultimate</div>
+         <h1>Analisi Costo</h1>
+       </div>
+       <div class="h">
+         <button id="btn-calc" class="btn-acc">Calcola</button>
+         <button id="btn-print" class="btn">🖨️ Stampa</button>
+         <button id="btn-save" class="btn-primary">Salva</button>
+       </div>
+    </div>
     
-    <!-- Barra compatta informazioni commessa --><div class="fld" style="grid-column: span 2">
-        <label class="muted small">Superficie di montaggio (m²)</label>
-        <input id="sup-mont" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.01" inputmode="decimal" />
-      </div>
-      <div class="fld" style="grid-column: span 2">
-        <label class="muted small">Superficie pannelli (m²)</label>
-        <input id="sup-pan" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.01" inputmode="decimal" />
-      </div>
-      <div class="fld" style="grid-column: span 4">
-        <label class="muted small">Data</label>
-        <input id="job-date" type="date" />
-      </div>
+    <div class="projbar">
+       <div class="col" style="grid-column: span 4">
+          <label>Nome Commessa</label>
+          <input id="job-name" type="text" placeholder="Es. Capannone Logistica MI" />
+       </div>
+       <div class="col" style="grid-column: span 2">
+          <label>Data</label>
+          <input id="job-date" type="date" />
+       </div>
+       <div class="col" style="grid-column: span 2">
+          <label>Sup. Montaggio (m²)</label>
+          <input id="sup-mont" type="text" class="num right" placeholder="0,00" />
+       </div>
+       <div class="col" style="grid-column: span 2">
+          <label>Sup. Pannelli (m²)</label>
+          <input id="sup-pan" type="text" class="num right" placeholder="0,00" />
+       </div>
     </div>
-
-    </div>
-
-    <div class="sub" style="margin:0 0 12px 2px">Tutte le quantità e i costi sono <b>inseriti manualmente</b>. Il <b>Peso stimato</b> = Volume × <b>2,5</b> t/m³. Geometrie iniziali a 0. • <b>Margine</b> calcolato come <i>ricarico inverso</i> sul (Subtotale + Utile).</div>
-
-    <!-- Blocco Dati Prodotto (manuale) -->
-    <div class="card pad" style="margin-bottom:12px">
-      <h2>Dati elemento</h2>
-      <div class="row" style="margin-top:8px">
-        <div class="col" style="grid-column: span 3">
-          <label class="small muted">Tipologia</label>
-          <select id="el-type">
-            <option value="Elemento precompresso">Struttura</option>
-            <option value="Pannello precompresso">Pannello</option>
-            <option value="Altra tipologia">Altra tipologia</option>
-          </select>
-        </div>
-        <div class="col" style="grid-column: span 5">
-          <label class="small muted">Descrizione</label>
-          <input id="el-desc" placeholder="es. Trave 60x120 L=24 m – C45/55 – 12 trefoli 0,6''" />
-        </div>
-        <div class="col" style="grid-column: span 1">
-          <label class="small muted">Lunghezza (m)</label>
-          <input id="len" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.01" value="0" />
-        </div>
-        <div class="col" style="grid-column: span 1">
-          <label class="small muted">Larghezza (m)</label>
-          <input id="wid" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.01" value="0" />
-        </div>
-        <div class="col" style="grid-column: span 1">
-          <label class="small muted">Altezza (m)</label>
-          <input id="hei" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.01" value="0" />
-        </div>
-        <div class="col" style="grid-column: span 1">
-          <label class="small muted">Vol. Cls (m³)</label>
-          <input id="vol" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.001" value="0" />
-        </div>
-        <div class="col" style="grid-column: span 1">
-          <label class="small muted">Peso stimato (t)</label>
-          <input id="peso" type="number" step="0.01" value="0" readonly />
-        </div>
-      </div>
-    </div>
-
-    <!-- Tabelle di costo -->
-    <div class="card pad" style="margin-bottom:12px">
-      <!-- TESTATA STICKY con pulsanti Aggiungi / Duplica / Elimina -->
-      <div class="cost-head-sticky">
-        <h2>Voci di costo</h2>
-        <div class="toolbar" id="toolbar-top">
-          <button class="btn" id="add-row">Aggiungi voce</button>
-          <button class="btn" id="dup-row">Duplica voce</button>
-          <button class="btn" id="del-row">Elimina voce</button>
-          <div class="pill small"><span>Filtro categoria:</span>
-            <select id="filter-cat" style="width:260px">
-              <option value="">Tutte</option>
-              <option>Materiali</option>
-              <option>Manodopera</option>
-              <option>Energia/Cura</option>
-              <option>Impianti/Noli</option>
-              <option>Attrezzature/Stampi</option>
-              <option>Qualità/Collaudi</option>
-              <option>Sicurezza/Ambiente</option>
-              <option>Logistica interna</option>
-              <option>Imballo/Stoccaggio</option>
-              <option>Trasporti</option>
-              <option>Montaggio</option>
-              <option>Spese Tecniche</option>
-              <option>Generali/Amministrative</option>
-              <option>Esterni</option>
-              <option>Interni</option>
-              <option>Altri</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="hr"></div>
-
-      <table class="grid" id="cost-grid">
-        <thead>
-          <tr>
-            <th style="width:34px">#</th>
-            <th>Categoria</th>
-            <th>Voce</th>
-            <th class="right">Q.tà</th>
-            <th>UM</th>
-            <th class="right">Costo unit. (€)</th>
-            <th class="right">K o.c. (%)</th>
-            <th class="right">Totale (€)</th>
-            <th class="right">Note</th>
-            <th class="right">Consuntivo</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-        <tfoot>
-          <tr>
-            <th colspan="6" class="right">Totale Materiali</th>
-            <th class="right num" id="tot-mat">0,00 €</th><th></th>
-          </tr>
-          <tr>
-            <th colspan="6" class="right">Totale Manodopera</th>
-            <th class="right num" id="tot-man">0,00 €</th><th></th>
-          </tr>
-          <tr>
-            <th colspan="6" class="right">Totale Altri (energia, noli, trasporti, montaggio, vari)</th>
-            <th class="right num" id="tot-alt">0,00 €</th><th></th>
-          </tr>
-          <tr>
-            <th colspan="6" class="right">Costo diretto</th>
-            <th class="right num" id="tot-diretto">0,00 €</th><th></th>
-          </tr>
-          <tr>
-            <th colspan="9" class="right">Totale Consuntivo</th>
-            <th class="right num" id="tot-cons">0,00 €</th>
-            <th></th>
-          </tr>
-        </tfoot>
-      </table>
-
-      <div class="footer small">
-        <div class="chips">
-          <span class="badge">Doppio click = modifica</span>
-          <span class="badge">Invio salva • Esc annulla</span>
-          <span class="badge">Numeri IT (virgola)</span>
-        </div>
-        <div class="muted">Tutte le quantità, UM e costi sono manuali. Il peso si aggiorna dal volume.</div>
-      </div>
-    </div>
-
-    <!-- Riepilogo e Mark-up -->
-    <div class="card pad">
-      <div class="row">
-        <div class="col" style="grid-column: span 7">
-          <h2>Parametri economici</h2>
-          <div class="kv" style="margin-top:6px">
-            <div class="muted small">Spese generali (%)</div>
-            <div><input id="pct-gg" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.1" value="8"></div>
-            <div class="muted small">Imprevisti (%)</div>
-            <div><input id="pct-imp" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.1" value="2"></div>
-            <div class="muted small">Provvigione (%) <span class="soft">(ricarico inverso)</span></div>
-<div><input id="pct-provv" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.1" value="0"></div>
-<div class="muted small">Utile (%)</div>
-            <div><input id="pct-ut" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.1" value="10"></div>
-            <div class="muted small">Margine di profitto (%) <span class="soft">(ricarico inverso)</span></div>
-            <div><input id="pct-margine" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.1" value="30"></div>
-            <div class="muted small">IVA (%)</div>
-            <div><input id="pct-iva" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.1" value="22"></div>
-            <div class="muted small">Sconto (%)</div>
-            <div><input id="pct-sconto" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.1" value="0"></div>
-            <div class="muted small">Produzione/lotto (pezzi)</div>
-            <div><input id="pezzi" type="text" inputmode="numeric" pattern="[0-9.,-]*" step="1" value="1"></div>
-            <div class="muted small">Metri lineari per pezzo (m)</div>
-            <div><input id="ml-per-pezzo" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.01" value="0"></div>
- 	    <div class="muted small">Metri quadrati per pezzo (m²)</div>
-            <div><input id="mq-per-pezzo" type="text" inputmode="decimal" pattern="[0-9.,-]*" step="0.01" value="0"></div>
-          </div>
-        </div>
-        <div class="col" style="grid-column: span 5">
-          <h2>Riepilogo</h2>
-          <div class="kv" style="margin-top:6px">
-            <div class="muted small">Costo diretto</div>
-            <div class="right num" id="r-dir">0,00 €</div>
-            <div class="muted small">+ Spese generali</div>
-            <div class="right num" id="r-gg">0,00 €</div>
-            <div class="muted small">+ Imprevisti</div>
-            <div class="right num" id="r-imp">0,00 €</div>
-            <div class="muted small">Subtotale industriale</div>
-            <div class="right num" id="r-sub">0,00 €</div>
-            <div class="muted small">+ Provvigione (ricarico)</div>
-            <div class="right num" id="r-provv">0,00 €</div>
-            <div class="muted small">+ Utile</div>
-            <div class="right num" id="r-ut">0,00 €</div>
-            <div class="muted small">+ Margine di profitto (ricarico)</div>
-            <div class="right num" id="r-margine">0,00 €</div>
-            <div class="muted small">Prezzo netto</div>
-            <div class="right num" id="r-netto">0,00 €</div>
-            <div class="muted small">+ IVA</div>
-            <div class="right num" id="r-iva">0,00 €</div>
-            <div class="muted small"><b class="totale">Prezzo totale</b></div>
-            <div class="right num totale" id="r-totale">0,00 €</div>
-            <div class="muted small">– Sconto</div>
-            <div class="right num" id="r-sconto">0,00 €</div>
-            <div class="muted small"><b class="totale">Totale scontato</b></div>
-            <div class="right num totale" id="r-totale-sconto">0,00 €</div>
-<div class="muted small">Margine commessa (%)</div>
-<div class="right num" id="r-margine-commessa">0,00 %</div>
-
-          </div>
-          <div class="hr"></div>
-          <div class="kv small">
-            <div class="muted">Prezzo / pezzo</div>
-            <div class="right num" id="r-per-pezzo">0,00 €</div>
-            <div class="muted">Prezzo / m lineare</div>
-            <div class="right num" id="r-per-ml">0,00 €</div>
-            <div class="muted">Prezzo / m²</div>
-            <div class="right num" id="r-per-mq">0,00 €</div>
-            <div class="muted">Prezzo / m³</div>
-            <div class="right num" id="r-per-mc">0,00 €</div>
-          
-            <div class="muted">Prezzo Struttura / m³</div>
-            <div class="right num" id="r-per-mc-struttura">0,00 €</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="hr"></div>
-
-      
-      <div class="toolbar toolbar-split" id="toolbar-bottom">
-        <div class="toolbar-col" id="tb-left">
-
-        
-        <button class="btn-acc" id="btn-calc">Calcola</button>
-<button class="btn-primary" id="btn-save">Salva (localStorage)</button>
-<button class="btn-ok" id="btn-save-as">Salva come… (HTML)</button>
-        <button class="btn" id="btn-load">Ricarica</button>
-        <button class="btn" id="btn-reset">Pulisci</button>
-        <button class="btn" id="btn-seed">Ripristina voci predefinite</button>
-
-        </div>
-        <div class="toolbar-col" id="tb-right">
-
-        <button class="btn-acc" id="btn-abachi">Abachi Revit</button>
-
-        <button class="btn-ok" id="btn-export-json">Esporta JSON</button>
-        <button class="btn" id="btn-import-json">Importa JSON</button>
-        <button class="btn-warn" id="btn-export-csv">Esporta in Excel (CSV)</button>
-        <!-- Il bottone XLSX sarà inserito via JS accanto a quello CSV -->
-        <span class="muted small">File singolo – nessuna dipendenza</span>
-
-        </div>
-      </div>
-
-    </div>
-
-    
-    <!-- ====== SEZIONE ABACHI REVIT (fogli separati) ====== -->
-    <div class="card pad" id="abachi-card" style="margin-top:12px; display:none">
-      <div class="h" style="justify-content:space-between">
-        <h2 style="margin:0">Abachi Revit (fogli importati)</h2>
-        <div class="small muted">Ogni foglio dell'Excel è gestito come pagina separata</div>
-      </div>
-      <div class="hr"></div>
-      <div id="abachi-tabs" class="toolbar" style="gap:6px; flex-wrap:wrap"></div>
-      <div id="abachi-host" style="margin-top:10px"></div>
-      <div class="footer small">
-        <div class="muted">Suggerimento: con Excel aperto, esporta i tuoi abachi in un unico file .xlsx con più fogli.</div>
-        <div class="muted nowrap">Doppio click dentro Excel non è richiesto: l'import è diretto.</div>
-      </div>
-    </div>
-
-<div class="sub" style="margin-top:10px">© Foglio HTML – produzione FULL (quantità manuali). Export XLSX con formati e simboli € identici.</div>
   </div>
 
-  <template id="row-template">
-    <tr>
-      <td class="muted right"></td>
-      <td contenteditable data-key="categoria" spellcheck="false"></td>
-      <td contenteditable data-key="voce" spellcheck="false"></td>
-      <td class="right" contenteditable data-key="qty"></td>
-      <td contenteditable data-key="um"></td>
-      <td class="right" contenteditable data-key="costo"></td>
-      <td class="right" contenteditable data-key="koc"></td>
-      <td class="right num" data-key="tot"></td>
-      <td contenteditable data-key="note" class="soft"></td>
-      <td contenteditable data-key="consuntivo" class="soft"></td>
-    </tr>
-  </template>
+  <!-- GEOMETRIA ELEMENTO -->
+  <div class="card pad" style="margin-bottom:16px;">
+    <div class="h" style="justify-content:space-between">
+       <h2>Dati Elemento</h2>
+       <button id="btn-geom-calc" class="btn small btn-icon" title="Calcolatrice Geometrica Avanzata">📐</button>
+    </div>
+    <div class="row">
+       <div class="col" style="grid-column: span 3">
+          <label>Tipologia</label>
+          <select id="el-type">
+             <option value="Elemento precompresso">Struttura / Trave</option>
+             <option value="Pannello precompresso">Pannello / Tamponamento</option>
+             <option value="Altra tipologia">Generico</option>
+          </select>
+       </div>
+       <div class="col" style="grid-column: span 4">
+          <label>Descrizione Elemento</label>
+          <input id="el-desc" placeholder="es. Trave I 80x120 L=20m" />
+       </div>
+       <div class="col" style="grid-column: span 1">
+          <label>L (m)</label>
+          <input id="len" type="number" step="0.01" class="right" />
+       </div>
+       <div class="col" style="grid-column: span 1">
+          <label>B (m)</label>
+          <input id="wid" type="number" step="0.01" class="right" />
+       </div>
+       <div class="col" style="grid-column: span 1">
+          <label>H (m)</label>
+          <input id="hei" type="number" step="0.01" class="right" />
+       </div>
+       <div class="col" style="grid-column: span 1">
+          <label>Vol (m³)</label>
+          <input id="vol" type="number" step="0.001" class="right" style="border-color:var(--acc)" />
+       </div>
+       <div class="col" style="grid-column: span 1">
+          <label>Peso (t)</label>
+          <input id="peso" type="text" readonly class="muted right" tabindex="-1" />
+       </div>
+    </div>
+  </div>
 
-  <div id="selftest" class="selftest err" style="display:none">Self-test: errore</div>
-  <div id="tests" class="tests" style="display:none"></div>
+  <!-- TABELLA COSTI -->
+  <div class="card pad table-container" style="margin-bottom:16px;">
+    <div class="cost-head-sticky">
+       <div class="h">
+         <h2>Voci di Costo</h2>
+         <select id="filter-cat" style="width:180px; height:32px; padding:0 8px;">
+            <option value="">Tutte le categorie</option>
+            <option>Materiali</option>
+            <option>Manodopera</option>
+            <option>Trasporti</option>
+            <option>Montaggio</option>
+            <option>Esterni</option>
+         </select>
+       </div>
+       <div class="h">
+         <button id="btn-catalog" class="btn-acc">📚 Catalogo</button>
+         <div style="width:1px;height:20px;background:var(--grid)"></div>
+         <button id="add-row" class="btn">Aggiungi</button>
+         <button id="dup-row" class="btn">Duplica</button>
+         <button id="del-row" class="btn-warn">Elimina</button>
+       </div>
+    </div>
 
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    
-  // Listener aggiunto per il pulsante fisso Calcola
-  document.getElementById('btn-calc-fixed').onclick = ()=>{ applySummary(); save(); };
-const fmt = new Intl.NumberFormat('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
-    const money = v => `${fmt.format(v||0)} \u20AC`;
-    function parseIT(str){ if(str==null) return 0; const s = String(str).trim().replace(/\u20AC|€/g,'').replace(/\./g,'').replace(',', '.'); const v = parseFloat(s); return isFinite(v)? v : 0; }
-    // Parser intelligente per numeri con separatori IT/EN (es. "5,000.00" o "5.000,00")
-    function parseSmart(val){
-      if(val == null) return NaN;
-      let s = String(val).trim().replace(/\u20AC|€/g,'').replace(/\s/g,'');
-      const hasComma = s.includes(',');
-      const hasDot = s.includes('.');
-      if (hasComma && hasDot){
-        const lastComma = s.lastIndexOf(',');
-        const lastDot = s.lastIndexOf('.');
-        if (lastDot > lastComma){
-          // formati tipo 5,000.00 (EN): punto è decimale
-          s = s.replace(/,/g,'');
-          return parseFloat(s);
-        } else {
-          // formati tipo 5.000,00 (IT): virgola è decimale
-          s = s.replace(/\./g,'').replace(',', '.');
-          return parseFloat(s);
-        }
-      } else if (hasComma){
-        // solo virgola: decimale
-        s = s.replace(/\./g,'').replace(',', '.');
-        return parseFloat(s);
-      } else {
-        // solo punto o numero secco
-        return parseFloat(s);
-      }
-    }
+    <table class="grid" id="cost-grid">
+       <thead>
+          <tr>
+             <th style="width:40px; text-align:center">#</th>
+             <th style="width:140px">Categoria</th>
+             <th>Descrizione Voce</th>
+             <th class="right" style="width:80px">Q.tà</th>
+             <th style="width:60px">UM</th>
+             <th class="right" style="width:100px">Costo Unit.</th>
+             <th class="right" style="width:80px">K o.c. %</th>
+             <th class="right" style="width:110px">Totale</th>
+             <th style="width:150px">Note</th>
+          </tr>
+       </thead>
+       <tbody id="tbody">
+          <!-- Righe generate via JS -->
+       </tbody>
+       <tfoot>
+          <tr>
+             <td colspan="7" class="right muted">Totale Materiali</td>
+             <td class="right num" id="tot-mat">0,00 €</td>
+             <td></td>
+          </tr>
+          <tr>
+             <td colspan="7" class="right muted">Totale Manodopera</td>
+             <td class="right num" id="tot-man">0,00 €</td>
+             <td></td>
+          </tr>
+          <tr>
+             <td colspan="7" class="right muted">Totale Altri (Noli, Trasporti, Montaggio...)</td>
+             <td class="right num" id="tot-alt">0,00 €</td>
+             <td></td>
+          </tr>
+          <tr>
+             <td colspan="7" class="right" style="font-size:16px; color:var(--acc)">COSTO DIRETTO DI PRODUZIONE</td>
+             <td class="right num" id="tot-diretto" style="font-size:16px; color:var(--acc); border-top:1px solid var(--grid)">0,00 €</td>
+             <td></td>
+          </tr>
+       </tfoot>
+    </table>
+    <div class="small muted" style="margin-top:8px;">
+       Doppio click sulle celle per modificare. "K o.c." è il coefficiente opere complementari.
+    </div>
+  </div>
 
-    // Forza la formattazione italiana nelle celle Q.tà e Costo unit.
-    function normalizeLocale(){
-      try{
-        const rows = [...document.getElementById('tbody').rows];
-        rows.forEach(tr => {
-          const qtyCell = tr.querySelector('[data-key="qty"]');
-          const costCell = tr.querySelector('[data-key="costo"]');
-          if(qtyCell){
-            const v = parseSmart(qtyCell.textContent);
-            if(!isNaN(v)) qtyCell.textContent = fmt.format(v);
-          }
-          if(costCell){
-            const v2 = parseSmart(costCell.textContent);
-            if(!isNaN(v2)) costCell.textContent = fmt.format(v2);
-          }
-        });
-      }catch(e){ console.warn('normalizeLocale error', e); }
-    }
+  <!-- RIEPILOGO E PARAMETRI -->
+  <div class="card pad">
+     <div class="row" style="grid-template-columns: 1fr 1fr; gap:24px;">
+        <div class="col">
+           <h2>Parametri economici</h2>
+           <div class="kv-grid">
+              <label>Spese generali (%)</label>
+              <input id="pct-gg" class="right" value="8" />
+              
+              <label>Imprevisti (%)</label>
+              <input id="pct-imp" class="right" value="2" />
+              
+              <label>Provvigione (%) <span class="muted small">(ricarico inverso)</span></label>
+              <input id="pct-provv" class="right" value="0" />
+              
+              <label>Utile (%)</label>
+              <input id="pct-ut" class="right" value="10" />
+              
+              <label>Margine di profitto (%) <span class="muted small">(ricarico inverso)</span></label>
+              <input id="pct-margine" class="right" value="30" />
+              
+              <label>IVA (%)</label>
+              <input id="pct-iva" class="right" value="22" />
+              
+              <label>Sconto (%)</label>
+              <input id="pct-sconto" class="right" value="0" />
+              
+              <div class="hr" style="grid-column:span 2; margin:8px 0;"></div>
+              
+              <label>Produzione/lotto (pezzi)</label>
+              <input id="pezzi" class="right" value="1" />
+              
+              <label>Metri lineari per pezzo (m)</label>
+              <input id="ml-per-pezzo" class="right" value="0" />
+              
+              <label>Metri quadrati per pezzo (m²)</label>
+              <input id="mq-per-pezzo" class="right" value="0" />
+           </div>
+        </div>
 
-    function setNum(el, v, isMoney=false){ el.textContent = isMoney ? money(v) : fmt.format(v); }
+        <div class="col" style="border-left:1px solid var(--grid); padding-left:24px;">
+           <h2>Riepilogo</h2>
+           <div class="kv-grid">
+              <label>Costo diretto</label>
+              <div class="val" id="r-dir">0,00 €</div>
+              
+              <label class="muted small">+ Spese generali</label>
+              <div class="val" id="r-gg">0,00 €</div>
+              
+              <label class="muted small">+ Imprevisti</label>
+              <div class="val" id="r-imp">0,00 €</div>
+              
+              <label style="color:var(--ink); font-weight:bold">Subtotale industriale</label>
+              <div class="val" id="r-sub" style="font-weight:bold; border-top:1px solid var(--grid)">0,00 €</div>
+              
+              <label class="muted small">+ Provvigione (ricarico)</label>
+              <div class="val" id="r-provv">0,00 €</div>
+              
+              <label class="muted small">+ Utile</label>
+              <div class="val" id="r-ut">0,00 €</div>
+              
+              <label class="muted small">+ Margine di profitto (ricarico)</label>
+              <div class="val" id="r-margine">0,00 €</div>
+              
+              <label style="color:var(--ink)">Prezzo netto</label>
+              <div class="val" id="r-netto">0,00 €</div>
+              
+              <label class="muted small">+ IVA</label>
+              <div class="val" id="r-iva">0,00 €</div>
+              
+              <label style="font-size:18px; font-weight:bold; color:var(--ink)">Prezzo totale</label>
+              <div class="val" id="r-totale" style="font-size:18px; font-weight:bold; color:var(--ink)">0,00 €</div>
+              
+              <label class="muted small">– Sconto</label>
+              <div class="val" id="r-sconto">0,00 €</div>
+              
+              <label style="font-size:18px; font-weight:bold; color:var(--ink)">Totale scontato</label>
+              <div class="val" id="r-totale-sconto" style="font-size:18px; font-weight:bold; color:var(--ink)">0,00 €</div>
+              
+              <label class="muted small">Margine commessa (%)</label>
+              <div class="val" id="r-margine-commessa">0,00 %</div>
+           </div>
+           
+           <div class="hr"></div>
+           
+           <div class="kv-grid">
+              <label>Prezzo / pezzo</label>
+              <div class="val" id="r-per-pezzo">0,00 €</div>
+              
+              <label>Prezzo / m lineare</label>
+              <div class="val" id="r-per-ml">0,00 €</div>
+              
+              <label>Prezzo / m²</label>
+              <div class="val" id="r-per-mq">0,00 €</div>
+              
+              <label>Prezzo / m³</label>
+              <div class="val" id="r-per-mc">0,00 €</div>
+              
+              <label>Prezzo Struttura / m³</label>
+              <div class="val" id="r-per-mc-struttura">0,00 €</div>
+           </div>
+        </div>
+     </div>
+  </div>
 
-    const tbody = document.getElementById('tbody');
-    const tpl = document.getElementById('row-template');
+  <!-- STATISTICHE E GRAFICI (Con Simulatore "What-If") -->
+  <div class="card pad" style="margin-top:16px;">
+     <div class="h" style="justify-content:space-between">
+        <h2>Statistiche & Simulazione</h2>
+        <div class="pill small muted" style="border:1px solid var(--warn); padding:4px 8px; border-radius:4px; color:var(--warn)">
+           Simulazione attiva: Costi materiali <span id="sim-display">+0%</span>
+        </div>
+     </div>
+     
+     <div class="row">
+        <!-- Torta Costi -->
+        <div class="col" style="grid-column: span 4; align-items:center;">
+           <div style="height:250px; width:100%; position:relative;">
+              <canvas id="costPieChart"></canvas>
+           </div>
+        </div>
+        
+        <!-- KPI Cards + Slider Simulazione -->
+        <div class="col" style="grid-column: span 8;">
+           
+           <!-- Slider What-If -->
+           <div style="background:#192233; padding:12px; border-radius:12px; margin-bottom:12px; border:1px solid var(--grid)">
+              <div class="h" style="justify-content:space-between; margin-bottom:4px">
+                 <label style="color:var(--warn)">Simula Variazione Costo Materiali</label>
+                 <span id="sim-val" style="font-weight:bold; color:var(--warn)">0%</span>
+              </div>
+              <input type="range" id="sim-slider" min="-20" max="50" value="0" style="width:100%; accent-color:var(--warn)">
+              <div class="small muted">Sposta per vedere come cambia il margine senza modificare i dati reali.</div>
+           </div>
 
-    function newRow(data={}){ const tr = tpl.content.firstElementChild.cloneNode(true); const keys = ['categoria','voce','qty','um','costo','koc','tot','note']; keys.forEach(k=>{ const cell = tr.querySelector(`[data-key="${k}"]`); if(!cell) return; if(k==='tot') setNum(cell, data[k]??0, true); else cell.textContent = data[k]??''; }); tbody.appendChild(tr); refreshIndex(); return tr; }
-    function refreshIndex(){ [...tbody.rows].forEach((tr,i)=>{ tr.cells[0].textContent = i+1; }); }
+           <div class="row" style="margin-bottom:12px;">
+              <div class="col" style="grid-column: span 4">
+                 <div class="stat-card">
+                    <span class="stat-lbl">Incidenza Manodopera</span>
+                    <span class="stat-val" id="stat-inc-man">0%</span>
+                 </div>
+              </div>
+              <div class="col" style="grid-column: span 4">
+                 <div class="stat-card">
+                    <span class="stat-lbl">Costo al kg (Finito)</span>
+                    <span class="stat-val" id="stat-eur-kg">0,00 €</span>
+                 </div>
+              </div>
+              <div class="col" style="grid-column: span 4">
+                 <div class="stat-card">
+                    <span class="stat-lbl">Moltiplicatore</span>
+                    <span class="stat-val" id="stat-mult">1.0x</span>
+                 </div>
+              </div>
+           </div>
+           
+           <div style="height:150px; width:100%;">
+              <canvas id="categoryBarChart"></canvas>
+           </div>
+        </div>
+     </div>
+  </div>
 
-    function calcTotals(){ let totMat=0, totMan=0, totAlt=0, totCons=0; [...tbody.rows].forEach(tr=>{ if (tr.style && tr.style.display === 'none') { return; } const cat = tr.querySelector('[data-key="categoria"]').textContent.trim(); const q = parseSmart(tr.querySelector('[data-key="qty"]').textContent); const c = parseSmart(tr.querySelector('[data-key="costo"]').textContent); const k = tr.querySelector('[data-key="koc"]') ? parseSmart(tr.querySelector('[data-key="koc"]').textContent) : 0; const tBase = q * c; const t = (k && isFinite(k) && k !== 0) ? (tBase / (1 - (k/100))) : tBase; setNum(tr.querySelector('[data-key="tot"]'), t, true); const cl = cat.toLowerCase(); if(cl.startsWith('material')) totMat += t; else if(cl.startsWith('manod')) totMan += t; else totAlt += t; const cons = tr.querySelector('[data-key="consuntivo"]'); if(cons){ const vCons = parseSmart(cons.textContent); if(!isNaN(vCons)) totCons += vCons; } }); document.getElementById('tot-mat').textContent = money(totMat); document.getElementById('tot-man').textContent = money(totMan); document.getElementById('tot-alt').textContent = money(totAlt); const diretto = totMat + totMan + totAlt; document.getElementById('tot-diretto').textContent = money(diretto); const elTotCons = document.getElementById('tot-cons'); if(elTotCons) elTotCons.textContent = money(totCons); return diretto; }
+  <!-- TOOLBAR AZIONI + SCENARI -->
+  <div class="card pad h" style="margin-top:16px; justify-content:space-between; flex-wrap:wrap">
+     <div class="h">
+       <button id="btn-reset" class="btn">Nuovo / Pulisci</button>
+       <button id="btn-seed" class="btn">Ricarica Default</button>
+       <button id="btn-save-as" class="btn">Salva HTML</button> <!-- REINTRODOTTO -->
+       <div style="width:1px; height:24px; background:var(--grid)"></div>
+       
+       <!-- Gestione Scenari -->
+       <div class="pill h" style="background:#151d28; padding:4px 8px; border-radius:8px; border:1px solid var(--grid)">
+          <span class="small muted">Scenari:</span>
+          <button id="save-A" class="btn small" title="Salva Scenario A">💾 A</button>
+          <button id="load-A" class="btn small" title="Carica Scenario A">📂 A</button>
+          <div style="width:1px; height:16px; background:var(--grid)"></div>
+          <button id="save-B" class="btn small" title="Salva Scenario B">💾 B</button>
+          <button id="load-B" class="btn small" title="Carica Scenario B">📂 B</button>
+       </div>
+     </div>
+     
+     <div class="h">
+       <button id="btn-abachi" class="btn-acc">Importa Abachi Revit</button>
+       <div style="width:1px; height:24px; background:var(--grid)"></div>
+       <button id="btn-export-xlsx" class="btn-ok">Esporta Excel</button>
+       <button id="btn-import-xlsx" class="btn">Importa Excel</button>
+     </div>
+  </div>
 
-    function applySummary(){ const diretto = calcTotals();
- const gg = parseIT(document.getElementById('pct-gg').value);
- const imp = parseIT(document.getElementById('pct-imp').value);
- const ut = parseIT(document.getElementById('pct-ut').value);
- let marg = parseIT(document.getElementById('pct-margine').value);
- const iva = parseIT(document.getElementById('pct-iva').value);
- const provvRaw = document.getElementById('pct-provv') ? parseIT(document.getElementById('pct-provv').value) : 0;
- const sconto = document.getElementById('pct-sconto') ? parseIT(document.getElementById('pct-sconto').value) : 0;
- const pezzi = parseIT(document.getElementById('pezzi').value)||1;
- const mlpz = parseIT(document.getElementById('ml-per-pezzo').value)||1;
- const mqpz = parseIT(document.getElementById('mq-per-pezzo').value)||0;
- const V = parseIT(document.getElementById('vol').value)||0;
+  <!-- SEZIONE ABACHI (Nascosta) -->
+  <div class="card pad" id="abachi-card" style="margin-top:16px; display:none">
+     <div class="h" style="justify-content:space-between">
+        <h2>Abachi Revit Importati</h2>
+        <button onclick="document.getElementById('abachi-card').style.display='none'" class="btn small">Chiudi</button>
+     </div>
+     <div id="abachi-tabs"></div>
+     <div id="abachi-host"></div>
+  </div>
 
- // Totali base
- const vGG  = diretto * gg/100;
- const vIMP = (diretto+vGG) * imp/100;
- const sub  = diretto + vGG + vIMP;
+  <div class="muted small right" style="margin-top:16px">
+     V 4.1 Ultimate Fix - Stampa - Scenari - Catalogo - Geometria
+  </div>
+  <div class="footer-print">
+     Documento generato automaticamente il <span id="print-date"></span> - Analisi Costi V4.1
+  </div>
 
- // Provvigione (ricarico inverso) PRIMA dell'Utile sul Subtotale
- let provv = provvRaw;
- if (provv >= 100) provv = 99.99;
- const denomProvv = 1 - (provv/100);
- const subProvv   = denomProvv > 0 ? sub / denomProvv : sub;
- const vPROVV     = subProvv - sub;
+</div>
 
- // Utile sul sub + provvigione
- const vUT = subProvv * ut/100;
+<!-- TEMPLATE RIGA -->
+<template id="row-template">
+  <tr>
+    <td class="muted right num" style="font-size:11px"></td>
+    <td contenteditable data-key="categoria" spellcheck="false"></td>
+    <td contenteditable data-key="voce" spellcheck="false"></td>
+    <td class="right num" contenteditable data-key="qty"></td>
+    <td contenteditable data-key="um" class="muted" style="text-align:center"></td>
+    <td class="right num" contenteditable data-key="costo"></td>
+    <td class="right num" contenteditable data-key="koc"></td>
+    <td class="right num" data-key="tot" style="font-weight:bold; color:var(--ink)"></td>
+    <td contenteditable data-key="note" class="muted small"></td>
+  </tr>
+</template>
 
- // Margine (ricarico inverso) dopo Utile
- if(marg >= 100) { marg = 99.99; }
- const base = subProvv + vUT;
- const denom = 1 - (marg/100);
- const nettoTarget = denom > 0 ? base / denom : base;
- const vMARG = nettoTarget - base;
+<!-- INPUT FILE NASCOSTI -->
+<input type="file" id="file-import-xlsx" accept=".xlsx" style="display:none" />
+<input type="file" id="file-abachi" accept=".xlsx" style="display:none" />
 
- const netto = nettoTarget;
- const vIVA = netto * iva/100;
- const tot = netto + vIVA;
+<script>
+// --- MODAL SYSTEM ---
+const modal = document.getElementById('custom-modal');
+const mTitle = document.getElementById('modal-title');
+const mContent = document.getElementById('modal-content');
+const mYes = document.getElementById('modal-confirm');
+const mNo = document.getElementById('modal-cancel');
 
- // Sconto DOPO l'IVA
- const vSCONTO = tot * (sconto/100);
- const totScontato = tot - vSCONTO;
+let currentCallback = null;
 
- // Prezzi unitari calcolati sul totale scontato
- const perPezzo = totScontato/pezzi;
- const perML = mlpz>0 ? (totScontato/pezzi)/mlpz : 0;
- const perMQ = (mqpz>0 && pezzi>0) ? (totScontato/pezzi)/mqpz : 0;
- const perMC = (V>0 && pezzi>0) ? (totScontato/pezzi)/V : 0;
-
- // Output riepilogo
- document.getElementById('r-dir').textContent = money(diretto);
- document.getElementById('r-gg').textContent = money(vGG);
- document.getElementById('r-imp').textContent = money(vIMP);
- document.getElementById('r-sub').textContent = money(sub);
- if (document.getElementById('r-provv')) document.getElementById('r-provv').textContent = money(vPROVV);
- document.getElementById('r-ut').textContent = money(vUT);
- document.getElementById('r-margine').textContent = money(vMARG);
- document.getElementById('r-netto').textContent = money(netto);
- document.getElementById('r-iva').textContent = money(vIVA);
- document.getElementById('r-totale').textContent = money(tot);
- if (document.getElementById('r-sconto')) document.getElementById('r-sconto').textContent = money(vSCONTO);
- if (document.getElementById('r-totale-sconto')) document.getElementById('r-totale-sconto').textContent = money(totScontato);
- document.getElementById('r-per-pezzo').textContent = money(perPezzo);
- document.getElementById('r-per-ml').textContent = money(perML);
- document.getElementById('r-per-mq').textContent = money(perMQ);
-document.getElementById('r-per-mc').textContent = money(perMC);
- 
- // Prezzo Struttura / m³ = Totale scontato / Superficie di montaggio (m²)
- const supMont = parseIT(document.getElementById('sup-mont').value) || 0;
- const perMCStruttura = supMont > 0 ? (totScontato / supMont) : 0;
- const elPerMcStrutt = document.getElementById('r-per-mc-struttura');
- if (elPerMcStrutt) elPerMcStrutt.textContent = money(perMCStruttura);
-// Calcolo margine commessa (%) = (Totale scontato − Prezzo netto) / Totale scontato × 100
- const margineCommessa = totScontato > 0 ? ((totScontato - subProvv) / totScontato) * 100 : 0;
- const elMarg = document.getElementById('r-margine-commessa');
- if (elMarg) elMarg.textContent = fmt.format(margineCommessa) + ' %';
-
- // Normalizza visualizzazione italiana per Q.tà e Costo unit.
- normalizeLocale();
+function resetModal() {
+  mContent.innerHTML = '<p id="modal-msg"></p>';
+  mYes.style.display = 'none';
+  mYes.textContent = 'Conferma';
+  mNo.textContent = 'Chiudi';
+  mNo.onclick = closeModal;
 }
 
-    let editingCell=null, beforeEdit="";
-    tbody.addEventListener('dblclick', (e)=>{ const td = e.target.closest('[contenteditable]'); if(!td) return; editingCell = td; beforeEdit = td.textContent; td.focus(); const r = document.createRange(); r.selectNodeContents(td); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); });
-    document.addEventListener('keydown', (e)=>{ if(!editingCell) return; if(e.key==='Escape'){ editingCell.textContent = beforeEdit; editingCell.blur(); editingCell=null; applySummary(); save(); } if(e.key==='Enter'){ e.preventDefault(); editingCell.blur(); editingCell=null; applySummary(); save(); } });
+function showConfirm(title, msg, callback) {
+   resetModal();
+   mTitle.textContent = title;
+   document.getElementById('modal-msg').textContent = msg;
+   currentCallback = callback;
+   modal.classList.add('active');
+   mYes.style.display = 'block';
+   mNo.textContent = 'Annulla';
+}
 
-    document.getElementById('add-row').onclick = ()=>{ newRow({categoria:'Altri',voce:'Nuova voce',qty:'0,00',um:'',costo:'0,00',koc:'0,00',note:''}); applySummary(); save(); };
-    document.getElementById('dup-row').onclick = ()=>{ const sel = getSelectedRow(); if(!sel) return alert('Seleziona una riga (clic in una cella).'); const data = extractRow(sel); newRow(data); applySummary(); save(); };
-    document.getElementById('del-row').onclick = ()=>{ const sel = getSelectedRow(); if(!sel) return alert('Seleziona una riga (clic in una cella).'); sel.remove(); refreshIndex(); applySummary(); save(); };
-    tbody.addEventListener('click', (e)=>{ const tr=e.target.closest('tr'); 
-// Aggiorna automaticamente i totali quando cambia una cella di quantità, costo, K o.c. o consuntivo
-tbody.addEventListener('input', e => {
-  const key = e.target.getAttribute('data-key');
-  if (['qty', 'costo', 'koc', 'consuntivo'].includes(key)) {
-    applySummary();
-    save();
+function showAlert(title, msg) {
+   resetModal();
+   mTitle.textContent = title;
+   document.getElementById('modal-msg').textContent = msg;
+   currentCallback = null;
+   modal.classList.add('active');
+}
+
+// Custom Modal Content (HTML injection)
+function showCustomModal(title, html, callback) {
+   resetModal();
+   mTitle.textContent = title;
+   mContent.innerHTML = html;
+   if(callback) {
+     currentCallback = callback;
+     mYes.style.display = 'block';
+     mYes.textContent = 'Applica';
+     mNo.textContent = 'Annulla';
+   }
+   modal.classList.add('active');
+}
+
+function closeModal() {
+   modal.classList.remove('active');
+   currentCallback = null;
+}
+
+mYes.onclick = () => {
+   if(currentCallback) {
+      if(currentCallback() !== false) closeModal();
+   } else {
+      closeModal();
+   }
+};
+
+// --- UTILS & FORMATTERS ---
+const fmt = new Intl.NumberFormat('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
+const money = v => `${fmt.format(v||0)} €`;
+
+function parseSmart(val){
+  if(val == null) return 0;
+  let s = String(val).trim().replace(/€/g,'').replace(/\s/g,'');
+  if(!s) return 0;
+  if(s.includes(',') && s.indexOf('.') < s.indexOf(',')){ 
+     s = s.replace(/\./g,'').replace(',','.'); 
+  } else if(s.includes(',')) {
+     s = s.replace(',','.');
   }
+  const v = parseFloat(s);
+  return isFinite(v) ? v : 0;
+}
+
+function setNum(el, v, isMoney=false) { 
+   el.textContent = isMoney ? money(v) : fmt.format(v); 
+}
+
+const tbody = document.getElementById('tbody');
+const tpl = document.getElementById('row-template');
+
+// --- CHART.JS ---
+let pieChart = null;
+let barChart = null;
+
+function initCharts() {
+  const ctxPie = document.getElementById('costPieChart').getContext('2d');
+  const ctxBar = document.getElementById('categoryBarChart').getContext('2d');
+  Chart.defaults.color = '#b7c2cf';
+  Chart.defaults.borderColor = '#263042';
+
+  pieChart = new Chart(ctxPie, {
+    type: 'doughnut',
+    data: {
+      labels: ['Materiali', 'Manodopera', 'Altri'],
+      datasets: [{ data: [0, 0, 0], backgroundColor: ['#4cc9f0', '#f59e0b', '#2dd4bf'], borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  barChart = new Chart(ctxBar, {
+    type: 'bar',
+    data: { labels: [], datasets: [{ label: 'Top Costi', data: [], backgroundColor: '#4cc9f0', borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display:false } }, scales: { x: { beginAtZero: true } } }
+  });
+}
+
+function updateCharts(tMat, tMan, tAlt, rowsData) {
+  if(!pieChart || !barChart) return;
+  pieChart.data.datasets[0].data = [tMat, tMan, tAlt];
+  pieChart.update();
+  const sorted = rowsData.sort((a,b) => b.tot - a.tot).slice(0, 5);
+  barChart.data.labels = sorted.map(x => x.voce.substring(0, 15) + (x.voce.length>15?'...':''));
+  barChart.data.datasets[0].data = sorted.map(x => x.tot);
+  barChart.update();
+}
+
+// --- CORE LOGIC ---
+let sensitivityFactor = 0; // %
+
+function newRow(data={}) {
+  const tr = tpl.content.firstElementChild.cloneNode(true);
+  const keys = ['categoria','voce','qty','um','costo','koc','tot','note'];
+  keys.forEach(k => {
+    const cell = tr.querySelector(`[data-key="${k}"]`);
+    if(!cell) return;
+    if(k==='tot') setNum(cell, data[k]||0, true);
+    else cell.textContent = data[k] || '';
+  });
+  tbody.appendChild(tr);
+  refreshIndex();
+  return tr;
+}
+
+function refreshIndex(){
+  [...tbody.rows].forEach((tr,i) => { tr.cells[0].textContent = i+1; });
+}
+
+function calcTotals() {
+  let totMat=0, totMan=0, totAlt=0;
+  const rowsData = [];
+  
+  [...tbody.rows].forEach(tr => {
+     if(tr.style.display === 'none') return;
+     const cat = tr.querySelector('[data-key="categoria"]').textContent.trim();
+     const voce = tr.querySelector('[data-key="voce"]').textContent.trim();
+     const catL = cat.toLowerCase();
+     const q = parseSmart(tr.querySelector('[data-key="qty"]').textContent);
+     const c = parseSmart(tr.querySelector('[data-key="costo"]').textContent);
+     const k = parseSmart(tr.querySelector('[data-key="koc"]').textContent);
+     
+     let base = q * c;
+     let tot = (k > 0 && k < 100) ? base / (1 - (k/100)) : base;
+     
+     // APPLY SENSITIVITY only to Materials
+     if (sensitivityFactor !== 0 && catL.startsWith('mat')) {
+        tot = tot * (1 + sensitivityFactor/100);
+     }
+
+     setNum(tr.querySelector('[data-key="tot"]'), tot, true);
+     
+     if(catL.startsWith('mat')) totMat += tot;
+     else if(catL.startsWith('manod')) totMan += tot;
+     else totAlt += tot;
+     
+     rowsData.push({ voce: voce || cat, tot: tot });
+  });
+  
+  document.getElementById('tot-mat').textContent = money(totMat);
+  document.getElementById('tot-man').textContent = money(totMan);
+  document.getElementById('tot-alt').textContent = money(totAlt);
+  
+  const diretto = totMat + totMan + totAlt;
+  document.getElementById('tot-diretto').textContent = money(diretto);
+  
+  if(window.Chart) updateCharts(totMat, totMan, totAlt, rowsData);
+  return diretto;
+}
+
+function applySummary() {
+  const diretto = calcTotals();
+  
+  const gg = parseSmart(document.getElementById('pct-gg').value);
+  const imp = parseSmart(document.getElementById('pct-imp').value);
+  let provv = parseSmart(document.getElementById('pct-provv').value);
+  const ut = parseSmart(document.getElementById('pct-ut').value);
+  let marg = parseSmart(document.getElementById('pct-margine').value);
+  const iva = parseSmart(document.getElementById('pct-iva').value);
+  const sconto = parseSmart(document.getElementById('pct-sconto').value);
+  
+  const pz = parseSmart(document.getElementById('pezzi').value) || 1;
+  const vol = parseSmart(document.getElementById('vol').value) || 0;
+  const mlpz = parseSmart(document.getElementById('ml-per-pezzo').value) || 0;
+  const mqpz = parseSmart(document.getElementById('mq-per-pezzo').value) || 0;
+  const supMont = parseSmart(document.getElementById('sup-mont').value) || 0;
+  
+  const valGG = diretto * (gg/100);
+  const valIMP = (diretto + valGG) * (imp/100);
+  const sub = diretto + valGG + valIMP;
+  
+  if(provv >= 100) provv = 99.9;
+  const baseDopoProvv = provv > 0 ? sub / (1 - (provv/100)) : sub;
+  const valProvv = baseDopoProvv - sub;
+  
+  const valUT = baseDopoProvv * (ut/100);
+  const baseDopoUtile = baseDopoProvv + valUT;
+  
+  if(marg >= 100) marg = 99.9;
+  const netto = marg > 0 ? baseDopoUtile / (1 - (marg/100)) : baseDopoUtile;
+  const valMarg = netto - baseDopoUtile;
+  
+  const valIVA = netto * (iva/100);
+  const totale = netto + valIVA;
+  const valSconto = totale * (sconto/100);
+  const totScontato = totale - valSconto;
+
+  const margComm = totScontato > 0 ? ((totScontato - sub) / totScontato) * 100 : 0;
+
+  document.getElementById('r-dir').textContent = money(diretto);
+  document.getElementById('r-gg').textContent = money(valGG);
+  document.getElementById('r-imp').textContent = money(valIMP);
+  document.getElementById('r-sub').textContent = money(sub);
+  document.getElementById('r-provv').textContent = money(valProvv);
+  document.getElementById('r-ut').textContent = money(valUT);
+  document.getElementById('r-margine').textContent = money(valMarg);
+  document.getElementById('r-netto').textContent = money(netto);
+  document.getElementById('r-iva').textContent = money(valIVA);
+  document.getElementById('r-totale').textContent = money(totale);
+  document.getElementById('r-sconto').textContent = money(valSconto);
+  document.getElementById('r-totale-sconto').textContent = money(totScontato);
+  document.getElementById('r-margine-commessa').textContent = fmt.format(margComm) + ' %';
+  
+  const totFin = totScontato;
+  document.getElementById('r-per-pezzo').textContent = money(totFin / pz);
+  const mlTot = mlpz > 0 ? mlpz * pz : (parseSmart(document.getElementById('len').value) || 0) * pz;
+  document.getElementById('r-per-ml').textContent = mlTot > 0 ? money(totFin / mlTot) : '0,00 €';
+  const mqTot = mqpz > 0 ? mqpz * pz : 0;
+  document.getElementById('r-per-mq').textContent = mqTot > 0 ? money(totFin / mqTot) : '0,00 €';
+  const mcTot = vol > 0 ? vol * pz : 0;
+  document.getElementById('r-per-mc').textContent = mcTot > 0 ? money(totFin / mcTot) : '0,00 €';
+  document.getElementById('r-per-mc-struttura').textContent = mcTot > 0 ? money(totFin / mcTot) : '0,00 €';
+  
+  const pesoTot = vol * 2.5 * 1000; 
+  document.getElementById('peso').value = fmt.format(pesoTot/1000);
+  
+  // Stats
+  const manPerc = diretto > 0 ? (parseSmart(document.getElementById('tot-man').textContent)/diretto)*100 : 0;
+  document.getElementById('stat-inc-man').textContent = fmt.format(manPerc) + '%';
+  const costKg = pesoTot > 0 ? (totFin / pesoTot) : 0;
+  document.getElementById('stat-eur-kg').textContent = fmt.format(costKg) + ' €';
+  const mult = diretto > 0 ? (totFin / diretto) : 0;
+  document.getElementById('stat-mult').textContent = fmt.format(mult) + 'x';
+  
+  saveToLocal();
+}
+
+// --- CATALOG & GEOMETRY MODALS ---
+
+const catalogItems = [
+  {c:'Materiali', v:'Calcestruzzo C45/55', u:'m³', p:'108,00'},
+  {c:'Materiali', v:'Acciaio B450C Barre', u:'kg', p:'0,65'},
+  {c:'Materiali', v:'Trefolo 0.6"', u:'kg', p:'0,95'},
+  {c:'Materiali', v:'Inserti Vari', u:'pz', p:'15,00'},
+  {c:'Manodopera', v:'Squadra Carpenteria', u:'h', p:'28,00'},
+  {c:'Manodopera', v:'Finitura', u:'h', p:'32,00'},
+  {c:'Trasporti', v:'Viaggio Bilico', u:'viaggio', p:'450,00'},
+  {c:'Noli', v:'Gru 100t', u:'h', p:'120,00'}
+];
+
+document.getElementById('btn-catalog').onclick = () => {
+  const html = `
+    <div class="catalog-list">
+      ${catalogItems.map((i, idx) => `
+        <div class="catalog-item" onclick="pickItem(${idx})">
+           <span style="font-weight:bold">${i.v}</span>
+           <span>${i.p} €/${i.u}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  // Global helper
+  window.pickItem = (idx) => {
+     const it = catalogItems[idx];
+     newRow({categoria:it.c, voce:it.v, qty:'1,00', um:it.u, costo:it.p, koc:'0,00'});
+     applySummary();
+     closeModal();
+  };
+  showCustomModal("Catalogo Prezzi", html, null); // No confirm needed, click selects
+};
+
+document.getElementById('btn-geom-calc').onclick = () => {
+  const html = `
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+       <div class="col"><label>Tipo Sezione</label>
+         <select id="gc-type" style="background:#0f1520; color:white; border:1px solid #444; padding:4px;">
+           <option value="rect">Rettangolare</option>
+           <option value="ibeam">Trave a I</option>
+         </select>
+       </div>
+       <div class="col"><label>Lunghezza (m)</label><input id="gc-l" type="number" step="0.01"></div>
+       <div class="col"><label>Base Inf (m)</label><input id="gc-b1" type="number" step="0.01"></div>
+       <div class="col"><label>Altezza (m)</label><input id="gc-h" type="number" step="0.01"></div>
+       <div class="col hidden" id="box-b2"><label>Base Sup (m)</label><input id="gc-b2" type="number" step="0.01"></div>
+       <div class="col hidden" id="box-tw"><label>Spess. Anima (m)</label><input id="gc-tw" type="number" step="0.01"></div>
+    </div>
+    <div style="margin-top:12px; font-size:12px; color:#aaa">Compila i campi per calcolare il volume.</div>
+  `;
+  
+  showCustomModal("Calcolatrice Geometrica", html, () => {
+     const t = document.getElementById('gc-type').value;
+     const L = parseFloat(document.getElementById('gc-l').value)||0;
+     const H = parseFloat(document.getElementById('gc-h').value)||0;
+     const B1 = parseFloat(document.getElementById('gc-b1').value)||0;
+     let area = 0;
+     
+     if(t === 'rect') {
+        area = B1 * H;
+     } else {
+        const B2 = parseFloat(document.getElementById('gc-b2').value)||B1;
+        const tw = parseFloat(document.getElementById('gc-tw').value)||0.2;
+        // Semplificazione I-beam: 2 ali + anima
+        // Ala inf: B1 * 0.15 (stima), Ala sup: B2 * 0.15, Anima: (H - 0.3)*tw
+        // Per precisione, servirebbero input altezze ali. Usiamo formula semplice:
+        // Area = (B1*H) - ((B1-tw)*(H-0.2)); // Molto approssimativo.
+        // Meglio: chiediamo area secca o lasciamo rettangolare.
+        // Facciamo calcolo base pesata:
+        area = (B1*0.2) + (B2*0.2) + (tw * (H-0.4)); 
+     }
+     const vol = area * L;
+     document.getElementById('vol').value = vol.toFixed(3);
+     document.getElementById('len').value = L.toFixed(2);
+     document.getElementById('wid').value = B1.toFixed(2);
+     document.getElementById('hei').value = H.toFixed(2);
+     applySummary();
+  });
+  
+  // Logic to show/hide fields
+  setTimeout(() => {
+     const sel = document.getElementById('gc-type');
+     const b2 = document.getElementById('box-b2');
+     const tw = document.getElementById('box-tw');
+     if(sel) {
+        sel.onchange = () => {
+           if(sel.value === 'ibeam') { b2.style.display='flex'; tw.style.display='flex'; }
+           else { b2.style.display='none'; tw.style.display='none'; }
+        };
+     }
+  }, 100);
+};
+
+// --- EVENTS ---
+tbody.addEventListener('input', e => {
+   const td = e.target;
+   const key = td.getAttribute('data-key');
+   if(key === 'categoria' || key === 'voce') {
+      const txt = (td.textContent||'').toLowerCase();
+      if(txt.includes('montaggio') || txt.includes('trasport') || txt.includes('complementar')) {
+         const tr = td.closest('tr');
+         const kCell = tr.querySelector('[data-key="koc"]');
+         if(parseSmart(kCell.textContent) === 0) kCell.textContent = '10,00';
+      }
+   }
+   applySummary();
 });
-if(tr){ [...tbody.rows].forEach(r=>r.classList.remove('sel')); tr.classList.add('sel'); } });
 
-    function getSelectedRow(){ return [...tbody.rows].find(r=>r.classList.contains('sel')); }
-    function extractRow(tr){ const o={}; ['categoria','voce','qty','um','costo','koc','note'].forEach(k=> o[k]= tr.querySelector(`[data-key="${k}"]`).textContent ); o.tot = parseIT(tr.querySelector('[data-key="tot"]').textContent); return o; }
+tbody.addEventListener('click', e => {
+   const tr = e.target.closest('tr');
+   if(!tr) return;
+   [...tbody.rows].forEach(r => r.classList.remove('sel'));
+   tr.classList.add('sel');
+});
 
-    document.getElementById('filter-cat').onchange = (e)=>{ const val = e.target.value.toLowerCase(); [...tbody.rows].forEach(tr=>{ const cat = tr.querySelector('[data-key="categoria"]').textContent.toLowerCase(); tr.style.display = (!val || cat.startsWith(val)) ? '' : 'none'; }); applySummary(); save(); };
+document.getElementById('add-row').onclick = () => { newRow({categoria:'Materiali', voce:'Nuova voce', qty:'1,00', um:'pz', costo:'0,00'}); applySummary(); };
+document.getElementById('del-row').onclick = () => {
+   const sel = tbody.querySelector('.sel');
+   if(sel) { sel.remove(); applySummary(); refreshIndex(); } 
+   else { showAlert("Attenzione", "Seleziona una riga per eliminarla (click sulla riga)."); }
+};
+document.getElementById('dup-row').onclick = () => {
+   const sel = tbody.querySelector('.sel');
+   if(sel) {
+      const data = {};
+      ['categoria','voce','qty','um','costo','koc','note'].forEach(k => { data[k] = sel.querySelector(`[data-key="${k}"]`).textContent; });
+      newRow(data); applySummary();
+   } else { showAlert("Attenzione", "Seleziona una riga per duplicarla."); }
+};
 
-    function snapshot(){ const rows = [...tbody.rows].map(tr=>({ categoria: tr.querySelector('[data-key="categoria"]').textContent, voce: tr.querySelector('[data-key="voce"]').textContent, qty: tr.querySelector('[data-key="qty"]').textContent, um: tr.querySelector('[data-key="um"]').textContent, costo: tr.querySelector('[data-key="costo"]').textContent, note: tr.querySelector('[data-key="note"]').textContent })); return { meta:{type:document.getElementById('el-type').value, desc:document.getElementById('el-desc').value}, geom:{L:document.getElementById('len').value, W:document.getElementById('wid').value, H:document.getElementById('hei').value, V:document.getElementById('vol').value, P:document.getElementById('peso').value}, econ:{ gg:document.getElementById('pct-gg').value, imp:document.getElementById('pct-imp').value, ut:document.getElementById('pct-ut').value, marg:document.getElementById('pct-margine').value, provv:document.getElementById('pct-provv') ? document.getElementById('pct-provv').value : 0, iva:document.getElementById('pct-iva').value, sconto:document.getElementById('pct-sconto') ? document.getElementById('pct-sconto').value : 0, pezzi:document.getElementById('pezzi').value, ml:document.getElementById('ml-per-pezzo').value }, rows }; }
+document.getElementById('btn-calc').onclick = applySummary;
+document.getElementById('btn-calc-fixed').onclick = applySummary;
+document.getElementById('filter-cat').addEventListener('change', (e) => {
+   const filter = e.target.value.toLowerCase();
+   [...tbody.rows].forEach(tr => {
+      const cat = tr.querySelector('[data-key="categoria"]').textContent.toLowerCase();
+      tr.style.display = (!filter || cat.includes(filter)) ? '' : 'none';
+   });
+   applySummary();
+});
+document.querySelectorAll('input').forEach(el => {
+   el.addEventListener('change', applySummary);
+   el.addEventListener('input', applySummary);
+});
 
-    function save(){ localStorage.setItem('costi-precompressi-v3-full', JSON.stringify(snapshot())); }
-    function load(data){ tbody.innerHTML=''; (data.rows||[]).forEach(r=> newRow(r)); if(data.meta){ document.getElementById('el-type').value = data.meta.type||'Trave precompressa'; document.getElementById('el-desc').value = data.meta.desc||''; } if(data.geom){ const g=data.geom; document.getElementById('len').value=g.L||0; document.getElementById('wid').value=g.W||0; document.getElementById('hei').value=g.H||0; document.getElementById('vol').value=g.V||0; document.getElementById('peso').value=g.P||0; } if(data.econ){ const e=data.econ; document.getElementById('pct-gg').value=e.gg; document.getElementById('pct-imp').value=e.imp; document.getElementById('pct-ut').value=e.ut; document.getElementById('pct-provv').value = (e.provv ?? 0); document.getElementById('pct-margine').value=e.marg ?? 30; document.getElementById('pct-iva').value=e.iva; document.getElementById('pct-sconto').value = (e.sconto ?? 0); document.getElementById('pezzi').value=e.pezzi; document.getElementById('ml-per-pezzo').value=e.ml; } refreshIndex(); applySummary(); }
+// SENSITIVITY SLIDER
+document.getElementById('sim-slider').addEventListener('input', (e) => {
+   sensitivityFactor = parseFloat(e.target.value);
+   document.getElementById('sim-val').textContent = (sensitivityFactor>0?'+':'') + sensitivityFactor + '%';
+   document.getElementById('sim-display').textContent = (sensitivityFactor>0?'+':'') + sensitivityFactor + '%';
+   applySummary();
+});
 
-    document.getElementById('btn-save').onclick = ()=>{ save(); alert('Salvato nel browser.'); };
-    document.getElementById('btn-load').onclick = ()=>{ const raw = localStorage.getItem('costi-precompressi-v3-full'); if(!raw){ alert('Nessun salvataggio trovato.'); return;} load(JSON.parse(raw)); };
-    document.getElementById('btn-reset').onclick = ()=>{ if(confirm('Sicuro di pulire tutto?')){ init(true); save(); } };
+// --- PERSISTENZA & SCENARI ---
+function getSnapshot() {
+   const rows = [...tbody.rows].map(tr => {
+      const d = {};
+      ['categoria','voce','qty','um','costo','koc','note'].forEach(k => { d[k] = tr.querySelector(`[data-key="${k}"]`).textContent; });
+      return d;
+   });
+   const inputs = {};
+   document.querySelectorAll('input, select').forEach(el => { if(el.id) inputs[el.id] = el.value; });
+   return { rows, inputs };
+}
 
-    document.getElementById('btn-export-json').onclick = ()=>{ const blob = new Blob([JSON.stringify(snapshot(),null,2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'analisi_costi_precompressi_full.json'; a.click(); };
-    document.getElementById('btn-import-json').onclick = ()=>{ const inp = document.createElement('input'); inp.type='file'; inp.accept='.json,application/json'; inp.onchange = async ()=>{ const file = inp.files[0]; if(!file) return; const text = await file.text(); try{ const data = JSON.parse(text); load(data); save(); } catch(err){ alert('File non valido.'); } }; inp.click(); };
+function restoreSnapshot(data) {
+   if(!data) return;
+   if(data.inputs) {
+      for(const id in data.inputs) {
+         const el = document.getElementById(id);
+         if(el) el.value = data.inputs[id];
+      }
+   }
+   tbody.innerHTML = '';
+   if(data.rows && data.rows.length) { data.rows.forEach(r => newRow(r)); } 
+   else { seedDefaults(); }
+   
+   // Reset slider on load to avoid confusion
+   document.getElementById('sim-slider').value = 0;
+   sensitivityFactor = 0;
+   
+   applySummary();
+}
 
-    document.getElementById('btn-export-csv').onclick = ()=>{ const rows = [['Categoria','Voce','Qta','UM','CostoUnit','Koc(%)','Totale','Note']]; [...tbody.rows].forEach(tr=>{ const cat = tr.querySelector('[data-key="categoria"]').textContent.replaceAll(';',','); const voce= tr.querySelector('[data-key="voce"]').textContent.replaceAll(';',','); const qty = tr.querySelector('[data-key="qty"]').textContent; const um  = tr.querySelector('[data-key="um"]').textContent; const cu  = tr.querySelector('[data-key="costo"]').textContent;
-        const koc = tr.querySelector('[data-key="koc"]') ? tr.querySelector('[data-key="koc"]').textContent : '';
-        const tot = tr.querySelector('[data-key="tot"]').textContent.replace(/\u00A0|\s/g,''); const note= tr.querySelector('[data-key="note"]').textContent.replaceAll('\\n',' ').replaceAll(';',','); rows.push([cat,voce,qty,um,cu,koc,tot,note]); }); const csv = rows.map(r=>r.map(v=>`"${v}"`).join(';')).join('\n'); const blob = new Blob([csv], {type:'application/vnd.ms-excel;charset=utf-8'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Analisi Costo di Produzione.csv'; a.click(); };
+document.getElementById('save-A').onclick = () => { localStorage.setItem('acp_scenario_A', JSON.stringify(getSnapshot())); showAlert("Scenario A", "Salvato!"); };
+document.getElementById('load-A').onclick = () => { const d = localStorage.getItem('acp_scenario_A'); if(d) restoreSnapshot(JSON.parse(d)); else showAlert("Scenario A", "Nessun dato salvato."); };
+document.getElementById('save-B').onclick = () => { localStorage.setItem('acp_scenario_B', JSON.stringify(getSnapshot())); showAlert("Scenario B", "Salvato!"); };
+document.getElementById('load-B').onclick = () => { const d = localStorage.getItem('acp_scenario_B'); if(d) restoreSnapshot(JSON.parse(d)); else showAlert("Scenario B", "Nessun dato salvato."); };
 
-    // === Calcolo Peso ===
-    document.getElementById('vol').addEventListener('input', ()=>{ const V = parseIT(document.getElementById('vol').value); const P = V * 2.5; document.getElementById('peso').value = fmt.format(P); applySummary(); save(); });
+function saveToLocal() { localStorage.setItem('acp_sticky_v3', JSON.stringify(getSnapshot())); }
+document.getElementById('btn-save').onclick = () => { saveToLocal(); showAlert("Salvataggio", "Dati salvati nel browser."); };
 
-    ['pct-gg','pct-imp','pct-provv','pct-ut','pct-margine','pct-iva','pct-sconto','pezzi','ml-per-pezzo','mq-per-pezzo'].forEach(id=> 
-      document.getElementById(id).addEventListener('change', ()=>{ applySummary(); save(); })
-    );
+// --- PRINT ---
+document.getElementById('btn-print').onclick = () => {
+   const now = new Date();
+   document.getElementById('print-date').textContent = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+   window.print();
+};
 
-    function init(forceEmpty=false){ tbody.innerHTML=''; const D = [
-      {categoria:'Materiali', voce:'Calcestruzzo (classe C45/55)', qty:'0,000', um:'m³', costo:'108,00', koc:'0,00', note:'Q.tà manuale'},
+document.getElementById('btn-reset').onclick = () => {
+   showConfirm("Nuovo / Pulisci", "Cancellare tutto?", () => { tbody.innerHTML = ''; newRow({categoria:'Materiali', voce:'—', qty:'0', costo:'0'}); applySummary(); });
+};
+document.getElementById('btn-seed').onclick = () => {
+   showConfirm("Ricarica Default", "Ricaricare i dati base?", () => { seedDefaults(); applySummary(); });
+};
+
+function seedDefaults() {
+   tbody.innerHTML = '';
+   const defs = [
+      {categoria:'Materiali', voce:'Calcestruzzo (classe C45/55)', qty:'0,00', um:'m³', costo:'108,00', koc:'0,00', note:'Q.tà manuale'},
       {categoria:'Materiali', voce:'Additivo fluidificante', qty:'0,00', um:'kg', costo:'0,00', koc:'0,00', note:''},
       {categoria:'Materiali', voce:'Disarmante casseri', qty:'0,00', um:'kg', costo:'0,00', koc:'0,00', note:''},
       {categoria:'Materiali', voce:'Coibente / Isolante', qty:'0,00', um:'m³', costo:'68,00', koc:'0,00', note:''},
@@ -753,650 +1164,100 @@ if(tr){ [...tbody.rows].forEach(r=>r.classList.remove('sel')); tr.classList.add(
       {categoria:'Manodopera Interni', voce:'Confezionamento Distribuzione Cls', qty:'0,00', um:'€/m³', costo:'10,00', koc:'0,00', note:''},
       {categoria:'Manodopera Interni', voce:'Magazzino e Controllo', qty:'0,00', um:'€/m³', costo:'1,50', koc:'0,00', note:''},
       {categoria:'Manodopera Altri', voce:'Imprevisti / Varie', qty:'0,00', um:'€/m³', costo:'8,00', koc:'0,00', note:''}
-    ]; if(!forceEmpty){ D.forEach(r=> newRow(r)); } else { newRow({categoria:'Materiali', voce:'—', qty:'0,00', um:'', costo:'0,00', koc:'0,00', note:''}); } refreshIndex(); applySummary(); }
+   ];
+   defs.forEach(d => newRow(d));
+}
 
-    function seedDefaults(){ init(true); init(false); }
-    document.getElementById('btn-seed').onclick = ()=>{ if(confirm('Ripristinare le voci predefinite? Le righe attuali verranno sostituite.')){ localStorage.removeItem('costi-precompressi-v3-full'); seedDefaults();
-    normalizeLocale(); save(); alert('Voci predefinite ripristinate.'); } };
-
-    seedDefaults();
-    normalizeLocale();
-    try{ const raw = localStorage.getItem('costi-precompressi-v3-full'); if(raw){ const data = JSON.parse(raw); if(data && Array.isArray(data.rows) && data.rows.length>0){ load(data); } } }catch(e){}
-
-    (function selfTest(){ const ids = ['btn-save','btn-load','btn-reset','btn-seed','btn-export-json','btn-import-json','btn-export-csv','add-row','dup-row','del-row','filter-cat','tbody','pct-margine','r-margine']; const missing = ids.filter(id=> !document.getElementById(id)); const badge = document.getElementById('selftest'); if(missing.length){ badge.textContent = 'Self-test: mancano -> ' + missing.join(', '); badge.classList.remove('ok'); badge.classList.add('err'); badge.style.display='block'; console.error('Self-test: elementi mancanti', missing); } else { badge.textContent = 'Self-test: OK'; badge.classList.remove('err'); badge.classList.add('ok'); badge.style.display='block'; } })();
-
-    (function runTests(){ const out = []; function t(name, fn){ try{ fn(); out.push('✓ ' + name); } catch(e){ out.push('✗ ' + name + ' → ' + e.message); } } function eq(a,b){ if(!(Math.abs(a-b) < 1e-9)) throw new Error(`${a} != ${b}`); } t('parseIT con virgola', ()=>{ eq(parseIT('1.234,50'), 1234.50); }); t('money format', ()=>{ const s = money(12.3); if(!/12,30/.test(s)) throw new Error('Formato non IT'); }); t('newRow crea riga', ()=>{ const n0 = tbody.rows.length; newRow({categoria:'Test', voce:'Voce', qty:'1,00', um:'pz', costo:'10,00'}); if(tbody.rows.length!==n0+1) throw new Error('Riga non aggiunta'); }); t('calcTotals aggiorna totali', ()=>{ const d = calcTotals(); if(isNaN(d)) throw new Error('Diretto NaN'); }); t('applySummary non lancia errori', ()=>{ applySummary(); }); const box = document.getElementById('tests'); if(box){ box.style.display='block'; box.textContent = out.join('  •  '); } console.log('TESTS:', out); })();
-
-    
-    // ====== ESPORTAZIONE EXCEL (XLSX) CON TUTTO (Parametri + Riepilogo + Tabella) ======
-    function esportaExcelXLSX(){
-      // garantisco che i totali siano aggiornati
-      try { applySummary(); } catch(e){ console.warn('applySummary error:', e); }
-
-      const wb = XLSX.utils.book_new();
-
-      // --------- Sheet 1: Parametri & Dati elemento ---------
-      const getVal = (id, type='text') => {
-        const el = document.getElementById(id);
-        if(!el) return '';
-        if(type==='text') return (el.value ?? el.textContent ?? '').toString().trim();
-        if(type==='num'){
-          const s = (el.value ?? el.textContent ?? '').toString().trim().replace(/\u20AC|€/g,'').replace(/\./g,'').replace(',', '.');
-          const v = parseFloat(s);
-          return isFinite(v) ? v : '';
-        }
-        return '';
-      };
-      const pAOA = [
-        ['SEZIONE','VALORE'],
-        ['Tipologia', getVal('el-type')],
-        ['Descrizione', getVal('el-desc')],
-        ['Lunghezza (m)', getVal('len','num')],
-        ['Larghezza (m)', getVal('wid','num')],
-        ['Altezza (m)', getVal('hei','num')],
-        ['Volume cls (m³)', getVal('vol','num')],
-        ['Peso stimato (t)', getVal('peso','num')],
-        [],
-        ['PARAMETRI ECONOMICI',''],
-        ['Spese generali (%)', getVal('pct-gg','num')],
-        ['Imprevisti (%)', getVal('pct-imp','num')],
-        ['Provvigione (%)', getVal('pct-provv','num')],
-        ['Utile (%)', getVal('pct-ut','num')],
-        ['Margine di profitto (%)', getVal('pct-margine','num')],
-        ['IVA (%)', getVal('pct-iva','num')],
-        ['Sconto (%)', getVal('pct-sconto','num')],
-        ['Produzione/lotto (pezzi)', getVal('pezzi','num')],
-        ['Metri lineari per pezzo (m)', getVal('ml-per-pezzo','num')],
-        ['Metri quadrati per pezzo (m²)', getVal('mq-per-pezzo','num')],
-      ];
-      const wsParam = XLSX.utils.aoa_to_sheet(pAOA);
-      // applica formato numerico/percentuale alle righe idonee
-      const pctRows = new Set(['Spese generali (%)','Imprevisti (%)','Provvigione (%)','Utile (%)','Margine di profitto (%)','IVA (%)','Sconto (%)']);
-      const numRows = new Set(['Lunghezza (m)','Larghezza (m)','Altezza (m)','Volume cls (m³)','Peso stimato (t)','Produzione/lotto (pezzi)','Metri lineari per pezzo (m)','Metri quadrati per pezzo (m²)']);
-      const rangeP = XLSX.utils.decode_range(wsParam['!ref']);
-      for (let R = 1; R <= rangeP.e.r; R++) {
-        const label = pAOA[R] && pAOA[R][0] ? String(pAOA[R][0]) : '';
-        const cellRef = XLSX.utils.encode_cell({ r: R, c: 1 });
-        const cell = wsParam[cellRef];
-        if(!cell) continue;
-        if (pctRows.has(label)) { cell.t='n'; cell.z='0.0%'; cell.v = (typeof cell.v==='number') ? cell.v/100 : parseFloat(cell.v)/100; }
-        if (numRows.has(label)) { cell.t='n'; cell.z='#,##0.###'; }
-      }
-      wsParam['!cols'] = [{wch:32},{wch:48}];
-      XLSX.utils.book_append_sheet(wb, wsParam, 'Parametri');
-
-      // --------- Sheet 2: Riepilogo ---------
-      function readMoney(id){
-        const el = document.getElementById(id); if(!el) return '';
-        const s = (el.textContent || '').replace(/\u20AC|€/g,'').replace(/\./g,'').replace(',', '.').replace(/\s/g,'');
-        const v = parseFloat(s); return isFinite(v)? v : '';
-      }
-      function readPercentText(id){
-        const el = document.getElementById(id); if(!el) return '';
-        const s = (el.textContent || '').replace('%','').replace(/\./g,'').replace(',', '.').replace(/\s/g,'');
-        const v = parseFloat(s); return isFinite(v)? v/100 : '';
-      }
-      const rAOA = [
-        ['VOCE','VALORE'],
-        ['Costo diretto', readMoney('r-dir')],
-        ['Spese generali', readMoney('r-gg')],
-        ['Imprevisti', readMoney('r-imp')],
-        ['Subtotale industriale', readMoney('r-sub')],
-        ['Provvigione', readMoney('r-provv')],
-        ['Utile', readMoney('r-ut')],
-        ['Margine di profitto', readMoney('r-margine')],
-        ['Prezzo netto', readMoney('r-netto')],
-        ['IVA', readMoney('r-iva')],
-        ['Prezzo totale', readMoney('r-totale')],
-        ['Sconto', readMoney('r-sconto')],
-        ['Totale scontato', readMoney('r-totale-sconto')],
-        ['Margine commessa (%)', readPercentText('r-margine-commessa')],
-        [],
-        ['Prezzo / pezzo', readMoney('r-per-pezzo')],
-        ['Prezzo / m lineare', readMoney('r-per-ml')],
-        ['Prezzo / m²', readMoney('r-per-mq')],
-        ['Prezzo / m³', readMoney('r-per-mc')],
-        ['Prezzo Struttura / m³', readMoney('r-per-mc-struttura')],
-      ];
-
-      const wsRiep = XLSX.utils.aoa_to_sheet(rAOA);
-      const euroFmt = '#,##0.00 [$€-it-IT]';
-      const rangeR = XLSX.utils.decode_range(wsRiep['!ref']);
-      for (let R = 1; R <= rangeR.e.r; R++) {
-        const val = rAOA[R] && rAOA[R][1];
-        if (val === '') continue;
-        const label = rAOA[R][0] || '';
-        const cellRef = XLSX.utils.encode_cell({ r: R, c: 1 });
-        const cell = wsRiep[cellRef];
-        if(!cell) continue;
-        if (String(label).includes('%')) { cell.t='n'; cell.z='0.00%'; }
-        else { cell.t='n'; cell.z=euroFmt; }
-      }
-      wsRiep['!cols'] = [{wch:28},{wch:24}];
-      XLSX.utils.book_append_sheet(wb, wsRiep, 'Riepilogo');
-
-      // --------- Sheet 3: Analisi Costi (tabella) ---------
-      const tbl = document.getElementById('cost-grid');
-      const ws_data = [];
-
-      // intestazioni
-      const headers = [];
-      tbl.querySelectorAll('thead th').forEach(th => headers.push(th.innerText.trim()));
-      ws_data.push(headers);
-
-      // righe dati
-      tbl.querySelectorAll('tbody tr').forEach(tr => {
-        const row = [];
-        const cells = tr.querySelectorAll('td');
-        for(let i=0;i<cells.length;i++) row.push(cells[i].innerText.trim());
-        ws_data.push(row);
-      });
-
-      // totali (tfoot)
-      tbl.querySelectorAll('tfoot tr').forEach(tr => {
-        const row = [];
-        tr.querySelectorAll('th, td').forEach(td => row.push(td.innerText.trim()));
-        ws_data.push(row);
-      });
-
-      const wsTab = XLSX.utils.aoa_to_sheet(ws_data);
-
-      // Formati numerici
-      const headerRow = ws_data[0].map(h=>h.toLowerCase());
-      const rangeT = XLSX.utils.decode_range(wsTab['!ref']);
-      for (let R = 1; R <= rangeT.e.r; R++) {
-        for (let C = 0; C <= rangeT.e.c; C++) {
-          const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
-          const cell = wsTab[cellRef];
-          if (!cell || typeof cell.v === 'undefined') continue;
-          const head = headerRow[C] || '';
-          const isMoneyCol = head.includes('€') || head.includes('costo') || head.includes('totale');
-          const isQtyCol = head.includes('q.tà') || head.includes('qta');
-          if (isMoneyCol || isQtyCol) {
-            const num = parseFloat(String(cell.v).replace(/[^0-9,.-]+/g, '').replace(',', '.'));
-            if (!isNaN(num)) {
-              cell.v = num;
-              cell.t = 'n';
-              cell.z = isMoneyCol ? euroFmt : '#,##0.###';
-            }
-          }
-        }
-      }
-
-      // larghezze colonne
-      const colMax = new Array(ws_data[0].length).fill(10);
-      ws_data.forEach(row => row.forEach((v,i)=>{
-        const len = String(v ?? '').length; if(len > colMax[i]) colMax[i] = len;
-      }));
-      wsTab['!cols'] = colMax.map(n => ({ wch: Math.min(Math.max(10, n + 2), 50) }));
-
-      XLSX.utils.book_append_sheet(wb, wsTab, 'Analisi Costi');
-
-      XLSX.writeFile(wb, 'Analisi Costo di Produzione.xlsx');
-    }
-
-
-    // Bottone accanto al CSV nella toolbar bottom
-    const btnXLSX = document.createElement('button');
-    btnXLSX.className = 'btn-ok';
-    btnXLSX.id = 'btn-export-xlsx';
-    btnXLSX.textContent = 'Esporta in Excel (XLSX)';
-    btnXLSX.addEventListener('click', esportaExcelXLSX);
-    const csvBtn = document.getElementById('btn-export-csv');
-    csvBtn.parentElement.insertBefore(btnXLSX, csvBtn.nextSibling);
-
-// === Pulsante Calcola: forza il ricalcolo e salva ===
-(function(){
-  const calcBtn = document.getElementById('btn-calc');
-  if(calcBtn){
-    calcBtn.addEventListener('click', ()=>{
-      try { applySummary(); save(); } catch(e){ console.warn('Calcola error:', e); }
-      normalizeLocale();
-      alert('Calcolo aggiornato.');
-    });
-  }
-})();
-
-// === Ricalcolo automatico su campi progetto / superfici ===
-['len','wid','hei','sup-mont','sup-pan','job-date','job-name'].forEach(id=>{
-  const el = document.getElementById(id);
-  if(el){
-    const ev = (el.type === 'text' || el.type === 'date') ? 'input' : 'change';
-    el.addEventListener(ev, ()=>{ try{ applySummary(); save(); }catch(e){ console.warn('auto-calc err:', e); } });
-  }
+// Init Load
+window.addEventListener('load', () => {
+  initCharts();
+  const saved = localStorage.getItem('acp_sticky_v3');
+  if(saved) restoreSnapshot(JSON.parse(saved));
+  else seedDefaults();
+  applySummary();
 });
 
-
-// === IMPORT BUTTON & LOGIC (auto-inserted) ===
-
-    // ====== IMPORTAZIONE EXCEL (XLSX) — SOVRASCRIVE TUTTO ======
-    async function importaExcelXLSX(file){
-      if(!file){ alert('Nessun file selezionato.'); return; }
-      try{
-        const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, {type:'array'});
-
-        // --- Helper per cercare fogli ---
-        function getSheet(name){
-          if(wb.Sheets[name]) return wb.Sheets[name];
-          // fallback: match case-insensitive
-          const k = Object.keys(wb.Sheets).find(n => n.toLowerCase() === String(name).toLowerCase());
-          return k ? wb.Sheets[k] : null;
-        }
-
-        // ---------- Leggi "Parametri" (A:B) ----------
-        const wsParam = getSheet('Parametri');
-        if(wsParam){
-          const AOA = XLSX.utils.sheet_to_json(wsParam, {header:1, raw:true});
-          const KV = {};
-          for(const row of AOA){
-            if(!row || row.length < 2) continue;
-            const key = String(row[0] || '').trim()
-            if(!key) continue;
-            KV[key] = row[1]
-          }
-          // Mappa chiavi -> ID input
-          const map = {
-            'Tipologia':'el-type',
-            'Descrizione':'el-desc',
-            'Lunghezza (m)':'len',
-            'Larghezza (m)':'wid',
-            'Altezza (m)':'hei',
-            'Volume cls (m³)':'vol',
-            'Peso stimato (t)':'peso',
-            'Spese generali (%)':'pct-gg',
-            'Imprevisti (%)':'pct-imp',
-            'Provvigione (%)':'pct-provv',
-            'Utile (%)':'pct-ut',
-            'Margine di profitto (%)':'pct-margine',
-            'IVA (%)':'pct-iva',
-            'Sconto (%)':'pct-sconto',
-            'Produzione/lotto (pezzi)':'pezzi',
-            'Metri lineari per pezzo (m)':'ml-per-pezzo',
-            'Metri quadrati per pezzo (m²)':'mq-per-pezzo',
-          };
-          // Setter robusto numeri/texte
-          const setVal = (id, val) => {
-            const el = document.getElementById(id);
-            if(!el) return;
-            if(typeof el.value !== 'undefined'){
-              el.value = (val==null ? '' : val);
-            } else {
-              el.textContent = (val==null ? '' : val);
-            }
-          };
-          for(const k in map){
-            if(Object.prototype.hasOwnProperty.call(KV,k)){
-              setVal(map[k], KV[k]);
-            }
-          }
-        }
-
-        // ---------- Leggi "Analisi Costi" (tabella) ----------
-        const wsTab = getSheet('Analisi Costi');
-        if(wsTab){
-          const data = XLSX.utils.sheet_to_json(wsTab, {header:1, raw:false});
-          if(data.length){
-            // Trova intestazioni e mappa colonne
-            const header = (data[0]||[]).map(s => String(s || '').trim().toLowerCase());
-            function findCol(names){
-              for(const n of names){
-                const i = header.indexOf(n.toLowerCase());
-                if(i>=0) return i;
-              }
-              return -1;
-            }
-            const idx = {
-              categoria: findCol(['categoria']),
-              voce: findCol(['voce']),
-              qty: findCol(['q.tà','qta','q.tà','qta.']),
-              um: findCol(['um','u.m.','unità','unita']),
-              costo: findCol(['costo unit. (€)','costo unit.','costo unitario','costo unit']),
-              tot: findCol(['totale (€)','totale']),
-              note: findCol(['note']),
-              rown: findCol(['#','n','num']),
-            };
-            // Svuota e ricrea tbody
-            const tbody = document.getElementById('tbody');
-            tbody.innerHTML='';
-            const tpl = document.getElementById('row-template');
-            const fmtIT = new Intl.NumberFormat('it-IT', {minimumFractionDigits:2, maximumFractionDigits:3});
-            const put = (tr, key, val) => {
-              const td = tr.querySelector(`[data-key="${key}"]`);
-              if(!td) return;
-              if(key==='tot'){
-                // lasciare a ricalcolo JS; valore da sheet ignorato
-                td.textContent = '';
-              } else {
-                td.textContent = (val==null ? '' : String(val));
-              }
-            };
-            for(let r=1; r<data.length; r++){
-              const row = data[r];
-              if(!row || row.every(v => (v==null || String(v).trim()===''))) continue;
-              const tr = tpl.content.firstElementChild.cloneNode(true);
-              put(tr,'categoria', idx.categoria>=0 ? row[idx.categoria] : '');
-              put(tr,'voce', idx.voce>=0 ? row[idx.voce] : '');
-              put(tr,'qty', idx.qty>=0 ? row[idx.qty] : '');
-              put(tr,'um', idx.um>=0 ? row[idx.um] : '');
-              put(tr,'costo', idx.costo>=0 ? row[idx.costo] : '');
-              // tot calcolato dal codice
-              put(tr,'tot', '');
-              put(tr,'note', idx.note>=0 ? row[idx.note] : '');
-              tbody.appendChild(tr);
-            }
-            // reindex + calcoli
-            (function refreshIndex(){ [...tbody.rows].forEach((tr,i)=>{ tr.cells[0].textContent = i+1; }); })();
-          }
-        }
-
-        // salva e ricalcola
-        if(typeof applySummary==='function') applySummary();
-        if(typeof save==='function') save();
-        alert('Importazione completata. Tutti i dati sono stati sovrascritti.');
-      }catch(err){
-        console.error(err);
-        alert('Errore durante l\'importazione del file XLSX.');
-      }
-    }
-
-    // Pulsante "Importa da Excel (XLSX)" accanto all'export
-    const fileInp = document.createElement('input');
-    fileInp.type = 'file';
-    fileInp.accept = '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    fileInp.style.display = 'none';
-    fileInp.addEventListener('change', () => {
-      if(fileInp.files && fileInp.files[0]) importaExcelXLSX(fileInp.files[0]);
-      fileInp.value = '';
-    });
-
-    const btnImport = document.createElement('button');
-    btnImport.className = 'btn-acc';
-    btnImport.id = 'btn-import-xlsx';
-    btnImport.textContent = 'Importa da Excel (XLSX)';
-    btnImport.addEventListener('click', () => fileInp.click());
-
-    document.body.appendChild(fileInp);
-    // Inserisci subito dopo il bottone XLSX export
-    (function(){
-      const b = document.getElementById('btn-export-xlsx');
-      if(b && b.parentElement){ b.parentElement.insertBefore(btnImport, b.nextSibling); }
-    })();
-
-  
-    // Prefill 'Data' with today's local date if empty
-    (function() {
-      var d = document.getElementById('job-date');
-      if (d && !d.value) {
-        var now = new Date();
-        var pad = function(n){ return String(n).padStart(2,'0'); };
-        var isoLocal = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
-        d.value = isoLocal;
-      }
-    })();
-}
-  );</script>
-
-<script>
-// ======== ABACHI REVIT: Importazione Excel e rendering fogli separati ========
-(function(){
-  const abachiBtnId = 'btn-abachi';
-  const card = document.getElementById('abachi-card');
-  const tabs = document.getElementById('abachi-tabs');
-  const host = document.getElementById('abachi-host');
-
-  // Crea input file nascosto
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-  fileInput.style.display = 'none';
-  document.body.appendChild(fileInput);
-
-  function clearAbachi(){
-    tabs.innerHTML = '';
-    host.innerHTML = '';
-  }
-
-  function makeTab(name, idx){
-    const b = document.createElement('button');
-    b.className = 'tab';
-    b.textContent = name;
-    b.dataset.idx = idx;
-    b.addEventListener('click', ()=>activate(idx));
-    return b;
-  }
-
-  function activate(idx){
-    // attiva tab
-    [...tabs.children].forEach(el => el.classList.toggle('active', el.dataset.idx == idx));
-    // attiva sheet
-    [...host.children].forEach(el => el.classList.toggle('active', el.dataset.idx == idx));
-  }
-
-  async function handleFile(file){
-    if(!file){ return; }
-    try{
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, { type:'array' });
-      const names = wb.SheetNames || [];
-
-      if(names.length === 0){
-        alert('Il file non contiene fogli.');
-        return;
-      }
-
-      clearAbachi();
-
-      names.forEach((nm, i)=>{
-        const ws = wb.Sheets[nm];
-        // Genero HTML tabellare con SheetJS
-        // NB: sheet_to_html esiste in xlsx.full
-        let html = '';
-        try{
-          html = XLSX.utils.sheet_to_html(ws, { header: nm, id: 'abachi-sheet-'+i });
-        }catch(e){
-          // fallback: da JSON
-          const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
-          const t = document.createElement('table');
-          const thead = document.createElement('thead');
-          const tbody = document.createElement('tbody');
-          if(rows.length){
-            const hr = document.createElement('tr');
-            rows[0].forEach(h=>{ const th = document.createElement('th'); th.textContent=String(h); hr.appendChild(th); });
-            thead.appendChild(hr);
-            for(let r=1;r<rows.length;r++){
-              const tr = document.createElement('tr');
-              rows[r].forEach(v=>{ const td = document.createElement('td'); td.textContent = String(v); tr.appendChild(td); });
-              tbody.appendChild(tr);
-            }
-          }
-          t.appendChild(thead); t.appendChild(tbody);
-          html = t.outerHTML;
-        }
-
-        // Tab
-        const tab = makeTab(nm, i);
-        tabs.appendChild(tab);
-
-        // Sheet host
-        const pane = document.createElement('div');
-        pane.className = 'sheet';
-        pane.dataset.idx = i;
-        // Rimuovo eventuale <html> wrapper generato da sheet_to_html e prendo solo la tabella
-        if (html.includes('<table')) {
-          const idxStart = html.indexOf('<table');
-          const idxEnd = html.lastIndexOf('</table>');
-          if(idxStart >= 0 && idxEnd >= 0){
-            pane.innerHTML = html.slice(idxStart, idxEnd + 8);
-          } else {
-            pane.innerHTML = html;
-          }
-        } else {
-          pane.innerHTML = html;
-        }
-        host.appendChild(pane);
+// --- EXPORT / IMPORT ---
+document.getElementById('btn-export-xlsx').onclick = () => {
+   const wb = XLSX.utils.book_new();
+   const snap = getSnapshot();
+   const rowsParam = [['CAMPO', 'VALORE'],['Commessa', snap.inputs['job-name']],['Data', snap.inputs['job-date']],['Elemento', snap.inputs['el-desc']],['Volume', snap.inputs['vol']],['Prezzo Finale', document.getElementById('r-totale').textContent],[]];
+   for(let k in snap.inputs) rowsParam.push([k, snap.inputs[k]]);
+   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rowsParam), "Parametri");
+   
+   const headers = ['Categoria','Voce','Qta','UM','Costo Unit','K oc','Totale','Note'];
+   const rowsData = [headers];
+   [...tbody.rows].forEach(tr => {
+      const r = [];
+      ['categoria','voce','qty','um','costo','koc','tot','note'].forEach(k => {
+         let val = tr.querySelector(`[data-key="${k}"]`).textContent;
+         if(['qty','costo','koc','tot'].includes(k)) val = parseSmart(val);
+         r.push(val);
       });
-
-      // Attiva sezione e primo tab
-      card.style.display = '';
-      activate(0);
-    }catch(err){
-      console.error('Errore import Abachi:', err);
-      alert('Import non riuscito. Verifica che sia un file .xlsx valido.');
-    }
-  }
-
-  // Bind bottone
-  const btn = document.getElementById(abachiBtnId);
-  if(btn){
-    btn.addEventListener('click', ()=>{
-      fileInput.value = '';
-      fileInput.onchange = ()=> handleFile(fileInput.files && fileInput.files[0]);
-      fileInput.click();
-    });
-  }
-})();
-</script>
-
-
-<script>
-(function(){
-  function persistRuntimeState(){
-    // Inputs / textareas
-    document.querySelectorAll('input, textarea').forEach(function(el){
-      if (el.type === 'checkbox' || el.type === 'radio') {
-        if (el.checked) el.setAttribute('checked',''); else el.removeAttribute('checked');
-        el.setAttribute('value', el.value ?? '');
-      } else {
-        el.setAttribute('value', el.value ?? '');
-      }
-    });
-    // Selects
-    document.querySelectorAll('select').forEach(function(sel){
-      Array.from(sel.options).forEach(function(opt){
-        if (opt.selected) opt.setAttribute('selected',''); else opt.removeAttribute('selected');
-      });
-    });
-  }
-
-  function embedLocalStorage(doc){
-    try{
-      var dump = {};
-      for (var i=0; i<localStorage.length; i++){
-        var k = localStorage.key(i);
-        dump[k] = localStorage.getItem(k);
-      }
-      var script = doc.createElement('script');
-      script.id = '__EMBED_LOCALSTORAGE__';
-      script.type = 'application/json';
-      script.textContent = JSON.stringify(dump);
-      doc.body.appendChild(script);
-
-      // bootstrap to restore when reopening
-      var boot = doc.createElement('script');
-      boot.textContent = `
-        (function(){
-          try{
-            var el = document.getElementById('__EMBED_LOCALSTORAGE__');
-            if (el){
-              var data = JSON.parse(el.textContent || '{}');
-              Object.keys(data).forEach(function(k){
-                try{ localStorage.setItem(k, data[k]); }catch(e){}
-              });
-            }
-          }catch(e){ console.warn('restore localStorage failed', e); }
-        })();
-      `;
-      doc.body.appendChild(boot);
-    }catch(e){ console.warn('embedLocalStorage error', e); }
-  }
-
-  catch(e){}
-    try { if (typeof normalizeLocale === 'function') normalizeLocale(); } catch(e){}
-    try { if (window.Abachi && typeof Abachi.renderAll === 'function') Abachi.renderAll(); } catch(e){}
-
-    persistRuntimeState();
-
-    // Clona il documento corrente per iniettare lo stato senza toccare la pagina
-    var doc = document.cloneNode(true);
-    embedLocalStorage(doc);
-
-    var doctype = '<!DOCTYPE html>';
-    var full = doctype + '\\n' + doc.documentElement.outerHTML;
-    var blob = new Blob([full], {type:'text/html;charset=utf-8'});
-    var a = document.createElement('a');
-
-    var jobEl = document.getElementById('job-name');
-    var job = jobEl ? (jobEl.value || jobEl.getAttribute('value') || '') : '';
-    job = (job || '').replace(/[^\w\- ]+/g, ' ').trim();
-    var d = new Date();
-    var fname = (job ? (job + ' - ') : '') + 'Analisi Costo - ' + d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + '.html';
-
-    a.download = fname;
-    a.href = URL.createObjectURL(blob);
-    a.click();
-    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
-  }
-
-  // Delega clic tab abachi per funzionare anche dopo il salvataggio
-  function setupAbachiDelegation(){
-    var tabs = document.getElementById('abachi-tabs') || document.querySelector('.abachi-tabs');
-    var panels = document.getElementById('abachi-panels') || document.querySelector('.abachi-panels');
-    if (!tabs || !panels) return;
-
-    function showPanel(id){
-      panels.querySelectorAll('[data-panel]').forEach(function(el){ el.classList.add('hidden'); });
-      var el = panels.querySelector('[data-panel="'+id+'"]');
-      if (el) el.classList.remove('hidden');
-    }
-
-    tabs.addEventListener('click', function(e){
-      var btn = e.target.closest('[data-abaco-target]');
-      if (!btn) return;
-      e.preventDefault();
-      var id = btn.getAttribute('data-abaco-target');
-      tabs.querySelectorAll('.active').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      showPanel(id);
-    }, {passive:false});
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupAbachiDelegation);
-  } else {
-    setupAbachiDelegation();
-  }
-})();
-</script>
-
-
-<!-- Hook Calcola fisso -->
-<script id="calc-fixed-hook">
-(function(){
-  var b=document.getElementById('btn-calc-fixed');
-  if(!b) return;
-  b.addEventListener('click', function(){
-    try{
-      if(typeof applySummary==='function') applySummary();
-      if(typeof save==='function') save();
-    }catch(e){ console.warn('Calcola fisso error:', e); }
-  });
-})();
-
-// --- SALVA CON NOME (usa Nome commessa + Data) ---
-
-
-// --- SALVA CON NOME (usa Nome commessa + Data) ---
-document.getElementById('btn-save-as').onclick = () => {
-  const nome = (document.getElementById('job-name')?.value || 'Analisi Costo di Produzione').trim();
-  const data = (document.getElementById('job-date')?.value || new Date().toISOString().slice(0,10));
-  const nomeFile = `${nome.replace(/[\\/:*?"<>|]/g,'-')} – ${data}.html`;
-  const blob = new Blob([document.documentElement.outerHTML], {type:'text/html'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = nomeFile;
-  a.click();
+      rowsData.push(r);
+   });
+   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rowsData), "Analisi");
+   XLSX.writeFile(wb, (snap.inputs['job-name']||'Analisi') + '.xlsx');
 };
-</script>
 
+const impInp = document.getElementById('file-import-xlsx');
+document.getElementById('btn-import-xlsx').onclick = () => impInp.click();
+impInp.onchange = async (e) => {
+   const f = e.target.files[0];
+   if(!f) return;
+   const data = await f.arrayBuffer();
+   const wb = XLSX.read(data);
+   const wsName = wb.SheetNames.find(n => n.toLowerCase().includes('analisi'));
+   if(!wsName) { showAlert("Errore", 'Foglio "Analisi" non trovato.'); return; }
+   const json = XLSX.utils.sheet_to_json(wb.Sheets[wsName]);
+   showConfirm("Importazione", `Trovate ${json.length} righe. Sostituire?`, () => {
+        tbody.innerHTML = '';
+        json.forEach(row => newRow({categoria: row['Categoria'], voce: row['Voce'], qty: row['Qta'], um: row['UM'], costo: row['Costo Unit'], koc: row['K oc'], note: row['Note']}));
+        applySummary(); impInp.value = '';
+   });
+};
+
+const abaInp = document.getElementById('file-abachi');
+document.getElementById('btn-abachi').onclick = () => abaInp.click();
+abaInp.onchange = async (e) => {
+   const f = e.target.files[0];
+   if(!f) return;
+   const data = await f.arrayBuffer();
+   const wb = XLSX.read(data);
+   const host = document.getElementById('abachi-host');
+   const tabs = document.getElementById('abachi-tabs');
+   host.innerHTML = ''; tabs.innerHTML = '';
+   wb.SheetNames.forEach((name, idx) => {
+      const btn = document.createElement('button');
+      btn.textContent = name; btn.className = 'btn small ' + (idx===0?'active':'');
+      btn.onclick = () => {
+         tabs.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+         btn.classList.add('active');
+         host.querySelectorAll('.sheet').forEach(s => s.classList.remove('active'));
+         host.querySelector(`[data-idx="${idx}"]`).classList.add('active');
+      };
+      tabs.appendChild(btn);
+      const div = document.createElement('div');
+      div.className = 'sheet ' + (idx===0?'active':'');
+      div.dataset.idx = idx;
+      div.innerHTML = XLSX.utils.sheet_to_html(wb.Sheets[name]);
+      host.appendChild(div);
+   });
+   document.getElementById('abachi-card').style.display='block';
+   abaInp.value = '';
+};
+
+const btnSaveAs = document.getElementById('btn-save-as');
+if(btnSaveAs) {
+   btnSaveAs.onclick = () => {
+      document.querySelectorAll('input, select').forEach(el => { if(el.type !== 'file') el.setAttribute('value', el.value); if(el.tagName === 'SELECT') { [...el.options].forEach(op => { if(op.selected) op.setAttribute('selected',''); else op.removeAttribute('selected'); }); } });
+      const blob = new Blob([document.documentElement.outerHTML], {type: 'text/html'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (document.getElementById('job-name').value || 'Analisi') + '.html';
+      a.click();
+   };
+}
+</script>
 </body>
 </html>
