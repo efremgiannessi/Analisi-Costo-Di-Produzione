@@ -1099,11 +1099,18 @@ document.getElementById('tbody').addEventListener('click', e => {
 });
 document.getElementById('tbody').addEventListener('input', applySummary);
 
-// --- CONNECT BUTTONS (FIXED) ---
-document.getElementById('add-row').onclick = () => addRow();
-document.getElementById('dup-row').onclick = dupRow;
-document.getElementById('del-row').onclick = delRow;
-document.getElementById('btn-calc').onclick = applySummary;
+// --- FUNCTIONS DEFINITIONS ---
+window.resetData = () => { 
+   document.getElementById('tbody').innerHTML=''; 
+   addRow(); // Add one empty row
+   applySummary(); 
+}
+
+window.seedDefaults = () => {
+   document.getElementById('tbody').innerHTML='';
+   STANDARD_ITEMS.forEach(d=>addRow({categoria:d.c, voce:d.d, um:d.u, costo:d.p, koc:d.k, qty:0}));
+   applySummary();
+}
 
 // --- CATALOG LOGIC (FIXED) ---
 document.getElementById('btn-catalog').onclick = () => {
@@ -1192,13 +1199,9 @@ document.getElementById('file-import-xlsx').onchange = async (e) => {
 };
 window.saveScenario = (id) => { localStorage.setItem('acp_sc_'+id, JSON.stringify(getSnapshot())); alert('Scenario '+id+' salvato'); }
 window.loadScenario = (id) => { const s=localStorage.getItem('acp_sc_'+id); if(s) restoreSnapshot(JSON.parse(s)); else alert('Vuoto'); }
-window.resetData = () => { document.getElementById('tbody').innerHTML=''; addRow(); applySummary(); }
 
-window.seedDefaults = () => {
-   document.getElementById('tbody').innerHTML='';
-   STANDARD_ITEMS.forEach(d=>addRow({categoria:d.c, voce:d.d, um:d.u, costo:d.p, koc:d.k, qty:0}));
-   applySummary();
-}
+// --- FIXED ABACHI BUTTON ---
+document.getElementById('btn-abachi').onclick = () => document.getElementById('abachi-card').style.display='block';
 
 // --- NEW LISTENER BLOCK ---
 // Attach listeners to inputs for real-time updates
@@ -1212,6 +1215,15 @@ inputsToWatch.forEach(id => {
   const el = document.getElementById(id);
   if(el) el.addEventListener('input', applySummary);
 });
+
+// --- CONNECT BUTTONS (FIXED ORDER) ---
+document.getElementById('add-row').onclick = () => addRow();
+document.getElementById('dup-row').onclick = dupRow;
+document.getElementById('del-row').onclick = delRow;
+document.getElementById('btn-calc').onclick = applySummary;
+// Important: Assign these AFTER the functions are defined
+document.getElementById('btn-reset').onclick = window.resetData;
+document.getElementById('btn-seed').onclick = window.seedDefaults;
 
 // --- INIT ---
 window.onload = () => {
