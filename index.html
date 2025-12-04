@@ -223,6 +223,18 @@
   </div>
 </div>
 
+<!-- CATALOG MODAL (REINSTATED) -->
+<div id="cat-modal" class="modal-overlay">
+  <div class="modal" style="max-height:80vh">
+    <div class="h" style="justify-content:space-between">
+       <h3>Catalogo Voci</h3>
+       <button onclick="document.getElementById('cat-modal').style.display='none'" class="btn">Chiudi</button>
+    </div>
+    <input placeholder="Cerca nel catalogo..." id="cat-search" style="margin-bottom:8px">
+    <div id="modal-db-list" class="catalog-list"></div>
+  </div>
+</div>
+
 <div class="wrap">
 
   <!-- HEADER -->
@@ -236,7 +248,7 @@
         </div>
       </div>
       <div class="h">
-        <button onclick="document.getElementById('btn-calc').click()" class="btn-primary"><i class="fa-solid fa-calculator"></i> Ricalcola</button>
+        <button onclick="applySummary()" class="btn-primary"><i class="fa-solid fa-calculator"></i> Ricalcola</button>
       </div>
     </div>
   </div>
@@ -352,7 +364,7 @@
 
         <table class="grid" id="cost-grid">
            <thead>
-              <tr>
+             <tr>
                  <th style="width:40px; text-align:center">#</th>
                  <th style="width:140px">Categoria</th>
                  <th>Descrizione Voce</th>
@@ -362,32 +374,32 @@
                  <th class="right" style="width:80px">K o.c. %</th>
                  <th class="right" style="width:110px">Totale</th>
                  <th style="width:150px">Note</th>
-              </tr>
+             </tr>
            </thead>
            <tbody id="tbody">
-              <!-- Righe generate via JS -->
+             <!-- Righe generate via JS -->
            </tbody>
            <tfoot>
-              <tr>
+             <tr>
                  <td colspan="7" class="right muted">Totale Materiali</td>
                  <td class="right num" id="tot-mat">0,00 €</td>
                  <td></td>
-              </tr>
-              <tr>
+             </tr>
+             <tr>
                  <td colspan="7" class="right muted">Totale Manodopera</td>
                  <td class="right num" id="tot-man">0,00 €</td>
                  <td></td>
-              </tr>
-              <tr>
+             </tr>
+             <tr>
                  <td colspan="7" class="right muted">Totale Altri (Noli, Trasporti, Montaggio...)</td>
                  <td class="right num" id="tot-alt">0,00 €</td>
                  <td></td>
-              </tr>
-              <tr>
+             </tr>
+             <tr>
                  <td colspan="7" class="right" style="font-size:16px; color:var(--acc)">COSTO DIRETTO DI PRODUZIONE</td>
                  <td class="right num" id="tot-diretto" style="font-size:16px; color:var(--acc); border-top:1px solid var(--grid)">0,00 €</td>
                  <td></td>
-              </tr>
+             </tr>
            </tfoot>
         </table>
         <div class="small muted" style="margin-top:8px;">
@@ -622,17 +634,17 @@
 
 <!-- TEMPLATE RIGA -->
 <template id="row-template">
-  <tr>
-    <td class="muted right num row-idx" style="font-size:11px"></td>
-    <td contenteditable data-key="categoria" spellcheck="false"></td>
-    <td contenteditable data-key="voce" spellcheck="false"></td>
-    <td class="right num" contenteditable data-key="qty"></td>
-    <td contenteditable data-key="um" class="muted" style="text-align:center"></td>
-    <td class="right num" contenteditable data-key="costo"></td>
-    <td class="right num" contenteditable data-key="koc"></td>
-    <td class="right num" data-key="tot" style="font-weight:bold; color:var(--ink)"></td>
-    <td contenteditable data-key="note" class="muted small"></td>
-  </tr>
+  <tr>
+    <td class="muted right num row-idx" style="font-size:11px"></td>
+    <td contenteditable data-key="categoria" spellcheck="false"></td>
+    <td contenteditable data-key="voce" spellcheck="false"></td>
+    <td class="right num" contenteditable data-key="qty"></td>
+    <td contenteditable data-key="um" class="muted" style="text-align:center"></td>
+    <td class="right num" contenteditable data-key="costo"></td>
+    <td class="right num" contenteditable data-key="koc"></td>
+    <td class="right num" data-key="tot" style="font-weight:bold; color:var(--ink)"></td>
+    <td contenteditable data-key="note" class="muted small"></td>
+  </tr>
 </template>
 
 <input type="file" id="file-import-xlsx" accept=".xlsx" style="display:none" />
@@ -972,17 +984,32 @@ document.getElementById('tbody').addEventListener('click', e => {
 });
 document.getElementById('tbody').addEventListener('input', applySummary);
 
+// --- CONNECT BUTTONS (FIXED) ---
+document.getElementById('add-row').onclick = () => addRow();
+document.getElementById('dup-row').onclick = dupRow;
+document.getElementById('del-row').onclick = delRow;
+document.getElementById('btn-calc').onclick = applySummary;
+
+// --- CATALOG LOGIC (FIXED) ---
 document.getElementById('btn-catalog').onclick = () => {
-   const c = document.getElementById('modal-db-list'); c.innerHTML='';
+   const c = document.getElementById('modal-db-list'); 
+   c.innerHTML='';
    db.forEach(i => {
       const d = document.createElement('div'); d.className='catalog-item';
       d.innerHTML = `<span style="color:var(--acc)">${i.c}</span> <b>${i.d}</b> <span>${i.p} €/${i.u}</span>`;
+      d.setAttribute('data-search', (i.c+i.d).toLowerCase());
       d.onclick = () => { addRow({categoria:i.c, voce:i.d, um:i.u, costo:i.p, koc:i.k, qty:1}); document.getElementById('cat-modal').style.display='none'; };
       c.appendChild(d);
    });
    document.getElementById('cat-modal').style.display='flex';
 }
-function openCatalogModal() { document.getElementById('btn-catalog').click(); }
+
+document.getElementById('cat-search').addEventListener('keyup', (e) => {
+    const val = e.target.value.toLowerCase();
+    document.querySelectorAll('#modal-db-list .catalog-item').forEach(el => {
+        el.style.display = el.getAttribute('data-search').includes(val) ? 'flex' : 'none';
+    });
+});
 
 document.getElementById('btn-geom-calc').onclick = () => { document.getElementById('custom-modal').classList.add('active'); 
    const html = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
