@@ -11,14 +11,35 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root{
-      --bg:#0b0f14; --panel:#121821; --muted:#1b2430; 
-      --ink:#e7edf3; --ink-2:#b7c2cf; 
-      --acc:#4cc9f0; --ok:#2dd4bf; --warn:#f59e0b; --err:#ef4444; 
-      --grid:#263042; 
-      --shadow: 0 8px 24px rgba(0,0,0,.4);
+      /* Modern Palette */
+      --bg-dark: #0f172a;
+      --bg-gradient: radial-gradient(circle at top left, #1e293b, #0f172a);
+      
+      /* Glassmorphism Panels */
+      --panel: rgba(30, 41, 59, 0.7); 
+      --panel-border: rgba(255, 255, 255, 0.08);
+      
+      --muted: rgba(255,255,255,0.05); 
+      --ink: #f8fafc; 
+      --ink-2: #94a3b8; 
+      
+      /* Accents */
+      --acc: #38bdf8;      /* Sky Blue */
+      --acc-glow: rgba(56, 189, 248, 0.4);
+      --ok: #4ade80;       /* Green */
+      --warn: #fbbf24;     /* Amber */
+      --err: #f87171;      /* Red */
+      
+      --grid: rgba(148, 163, 184, 0.1); 
+      
+      --shadow: 0 10px 40px -10px rgba(0,0,0,0.5);
+      --radius: 16px;
+      
       --z-modal: 2000; --z-toolbar: 100; --z-thead: 90;
     }
 
@@ -26,66 +47,124 @@
     html,body { height:100%; margin:0; padding:0; }
     
     body {
-      background: linear-gradient(180deg,#0b0f14,#0c121b 60%,#0b0f14);
+      background: var(--bg-dark);
+      background-image: var(--bg-gradient);
+      background-attachment: fixed;
       color: var(--ink);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
-      font-size: 14px;
-      line-height: 1.45;
+      font-family: 'Inter', sans-serif; /* Modern Font */
+      font-size: 13px; /* Slightly smaller base for cleaner look */
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .wrap { max-width:1400px; margin:0 auto; padding:16px; padding-bottom: 80px; }
+    .wrap { max-width:1440px; margin:0 auto; padding:24px; padding-bottom: 100px; }
     
     /* --- UTILITY & LAYOUT --- */
-    .card { background:var(--panel); border:1px solid var(--grid); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:16px; }
-    .pad { padding:16px; }
+    .card { 
+      background: var(--panel); 
+      backdrop-filter: blur(16px); 
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border); 
+      border-radius: var(--radius); 
+      box-shadow: var(--shadow); 
+      overflow:hidden; 
+      margin-bottom:20px; 
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .pad { padding:20px; }
     .h { display:flex; gap:12px; align-items:center; }
     .v { display:flex; flex-direction:column; gap:8px; }
-    .row { display:grid; grid-template-columns:repeat(12,1fr); gap:12px; }
-    .col { display:flex; flex-direction:column; gap:4px; }
-    .hr { height:1px; background:linear-gradient(90deg,transparent,#263042,transparent); margin:16px 0; }
+    .row { display:grid; grid-template-columns:repeat(12,1fr); gap:16px; }
+    .col { display:flex; flex-direction:column; gap:6px; }
+    .hr { height:1px; background:linear-gradient(90deg,transparent,var(--grid),transparent); margin:20px 0; }
     .right { text-align:right; }
-    .num { font-variant-numeric: tabular-nums; font-family: "Consolas", monospace; letter-spacing: -0.5px; }
+    .num { font-variant-numeric: tabular-nums; font-family: "Inter", sans-serif; font-weight: 500; letter-spacing: -0.2px; }
     .muted { color:var(--ink-2); }
     .small { font-size:12px; }
-    .bold { font-weight:700; }
+    .bold { font-weight:600; }
     .hidden { display:none !important; }
 
     /* --- TYPOGRAPHY & INPUTS --- */
-    h1 { font-size:20px; margin:0; font-weight:700; color:var(--ink); }
-    h2 { font-size:16px; margin:0 0 12px; color:var(--acc); font-weight:600; text-transform:uppercase; letter-spacing:1px; }
+    h1 { font-size:24px; margin:0; font-weight:700; color:var(--ink); letter-spacing: -0.5px; }
+    h2 { font-size:14px; margin:0 0 16px; color:var(--acc); font-weight:600; text-transform:uppercase; letter-spacing:1px; opacity: 0.9; }
     
     input, select, textarea {
-      width:100%; background:#0f1520; border:1px solid var(--grid); color:var(--ink);
-      padding:8px 10px; border-radius:8px; outline:none; transition: all 0.2s;
+      width:100%; 
+      background: rgba(0,0,0,0.2); 
+      border: 1px solid var(--panel-border); 
+      color: var(--ink);
+      padding: 10px 12px; 
+      border-radius: 8px; 
+      outline: none; 
+      font-family: inherit;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    input:focus, select:focus { border-color:var(--acc); box-shadow:0 0 0 2px rgba(76,201,240,.15); }
-    label { font-size:11px; color:var(--ink-2); font-weight:600; text-transform:uppercase; }
+    input:focus, select:focus { 
+      border-color: var(--acc); 
+      background: rgba(0,0,0,0.4);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); 
+    }
+    input::placeholder { color: rgba(255,255,255,0.2); }
+    label { font-size:11px; color:var(--ink-2); font-weight:600; text-transform:uppercase; letter-spacing: 0.5px; }
 
     /* --- BUTTONS --- */
     button, .btn {
-      background:#192233; border:1px solid var(--grid); color:var(--ink);
-      padding:8px 14px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:500;
-      transition: background 0.2s; display:inline-flex; align-items:center; gap:6px; justify-content:center;
+      background: rgba(255,255,255,0.05); 
+      border: 1px solid rgba(255,255,255,0.1); 
+      color: var(--ink);
+      padding: 9px 16px; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-size: 13px; 
+      font-weight: 500;
+      transition: all 0.2s ease; 
+      display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    button:hover { background:#2a3649; border-color:#35507c; }
-    .btn-primary { background:var(--acc); color:#000; border-color:var(--acc); font-weight:700; }
-    .btn-primary:hover { background:#2ac0eb; }
-    .btn-acc { background:rgba(76,201,240,0.1); border-color:var(--acc); color:var(--acc); }
-    .btn-acc:hover { background:rgba(76,201,240,0.2); }
-    .btn-ok { background:rgba(45,212,191,0.1); border-color:var(--ok); color:var(--ok); }
-    .btn-ok:hover { background:rgba(45,212,191,0.2); }
-    .btn-warn { background:rgba(245,158,11,0.1); border-color:var(--warn); color:var(--warn); }
-    .btn-icon { padding: 8px; width: 36px; text-align: center; }
+    button:hover { 
+      background: rgba(255,255,255,0.1); 
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    button:active { transform: translateY(0); }
+
+    .btn-primary { 
+      background: linear-gradient(135deg, var(--acc), #0ea5e9); 
+      color: #000; 
+      border: none; 
+      font-weight: 600; 
+      box-shadow: 0 4px 14px var(--acc-glow);
+    }
+    .btn-primary:hover { 
+      background: linear-gradient(135deg, #7dd3fc, #38bdf8); 
+      box-shadow: 0 6px 20px var(--acc-glow);
+    }
+
+    .btn-acc { background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); color: var(--acc); }
+    .btn-acc:hover { background: rgba(56, 189, 248, 0.2); border-color: var(--acc); }
+
+    .btn-ok { background: rgba(74, 222, 128, 0.1); border-color: rgba(74, 222, 128, 0.3); color: var(--ok); }
+    .btn-ok:hover { background: rgba(74, 222, 128, 0.2); border-color: var(--ok); }
+
+    .btn-warn { background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.3); color: var(--warn); }
+    .btn-warn:hover { background: rgba(251, 191, 36, 0.2); border-color: var(--warn); }
+    
+    .btn-icon { padding: 9px; width: 38px; text-align: center; justify-content: center;}
 
     /* --- SPECIFIC LAYOUTS --- */
     .topbar {
-      position: relative; background: linear-gradient(180deg,#131a24 0%,#0f1621 100%);
-      border: 1px solid var(--grid); border-radius: 12px; box-shadow: var(--shadow);
-      margin-bottom: 16px; padding: 12px 16px;
+      position: relative; 
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--panel-border); 
+      border-radius: var(--radius); 
+      box-shadow: var(--shadow);
+      margin-bottom: 20px; padding: 16px 24px;
     }
     .projbar {
-      display:grid; grid-template-columns:repeat(12,1fr); gap:10px;
-      margin-top:12px; padding-top:12px; border-top:1px dashed var(--grid);
+      display:grid; grid-template-columns:repeat(12,1fr); gap:16px;
+      margin-top:16px; padding-top:16px; border-top:1px dashed var(--grid);
     }
     
     /* --- TABLE SCROLLABLE --- */
@@ -96,78 +175,106 @@
         max-height: 600px; 
         scroll-behavior: smooth; 
         border-bottom: 1px solid var(--grid);
+        border-radius: 12px;
+        background: rgba(0,0,0,0.1);
     }
-    .table-container::-webkit-scrollbar { width: 10px; height: 10px; }
-    .table-container::-webkit-scrollbar-track { background: #0f1520; }
-    .table-container::-webkit-scrollbar-thumb { background: #263042; border-radius: 5px; }
+    .table-container::-webkit-scrollbar { width: 8px; height: 8px; }
+    .table-container::-webkit-scrollbar-track { background: transparent; }
+    .table-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    .table-container::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
     .cost-head-sticky {
       position: sticky; top: 0; z-index: var(--z-toolbar);
-      background: #121821; border-bottom: 1px solid var(--grid);
-      padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
-      margin: 0 -16px; width: calc(100% + 32px); box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      background: rgba(20, 30, 45, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--grid);
+      padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+      margin: 0 -16px; width: calc(100% + 32px); box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
     table.grid { width:100%; border-collapse:separate; border-spacing:0; }
-    .grid th, .grid td { border-bottom:1px dashed var(--grid); padding:8px 10px; vertical-align:middle; }
-    .grid th { text-align:left; font-weight:600; color:var(--ink-2); font-size:12px; text-transform:uppercase; }
+    .grid th, .grid td { border-bottom:1px solid var(--grid); padding:10px 12px; vertical-align:middle; transition: background 0.1s; }
+    .grid th { text-align:left; font-weight:600; color:var(--ink-2); font-size:11px; text-transform:uppercase; letter-spacing: 0.5px; }
     .grid thead th {
       position: sticky; top: 56px; z-index: var(--z-thead);
-      background: #151d28; border-bottom: 2px solid var(--grid);
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      background: #1e293b; 
+      border-bottom: 2px solid var(--grid);
+      padding-top: 14px; padding-bottom: 14px;
     }
-    .grid tbody tr:hover { background:rgba(255,255,255,0.03); }
-    .grid tbody tr.sel { background:rgba(76,201,240,0.1); }
-    [contenteditable] { cursor:text; border-radius:4px; padding:2px 4px; }
-    [contenteditable]:focus { background:#000; outline:1px solid var(--acc); color:var(--acc); }
-    .grid tfoot th { text-align:right; color:var(--ink-2); padding-top:12px; border-bottom:none; }
-    .grid tfoot td, .grid tfoot .num { font-size:15px; font-weight:700; color:var(--ink); border-bottom:none; padding-top:12px; }
+    .grid tbody tr:hover td { background:rgba(255,255,255,0.03); }
+    .grid tbody tr.sel td { background:rgba(56, 189, 248, 0.15) !important; color: white; }
+    
+    [contenteditable] { cursor:text; border-radius:4px; padding:4px 6px; border: 1px solid transparent; transition: all 0.2s; }
+    [contenteditable]:hover { background: rgba(255,255,255,0.05); }
+    [contenteditable]:focus { background:rgba(0,0,0,0.3); border-color:var(--acc); color:var(--acc); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.1); }
+    
+    .grid tfoot th { text-align:right; color:var(--ink-2); padding-top:16px; border-bottom:none; }
+    .grid tfoot td, .grid tfoot .num { font-size:15px; font-weight:700; color:var(--ink); border-bottom:none; padding-top:16px; }
 
     /* --- SUMMARY & STATS --- */
     .kv-grid { display:grid; grid-template-columns: 1fr 120px; gap:8px 16px; align-items:center; }
-    .kv-grid label { font-size:12px; color:var(--ink-2); font-weight:normal; text-transform:none; }
-    .kv-grid .val { text-align:right; font-family:"Consolas", monospace; font-size:13px; }
+    .kv-grid label { font-size:12px; color:var(--ink-2); font-weight:500; text-transform:none; }
+    .kv-grid .val { text-align:right; font-family:"Inter", monospace; font-size:13px; color: white; font-weight: 500; }
 
     .stat-card {
-      background: #151d28; border: 1px solid var(--grid);
-      border-radius: 12px; padding: 12px; display:flex; flex-direction:column; gap:4px;
+      background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); 
+      border: 1px solid var(--panel-border);
+      border-radius: 12px; padding: 16px; display:flex; flex-direction:column; gap:6px;
+      transition: transform 0.2s;
     }
-    .stat-val { font-size:20px; font-weight:bold; color:#fff; }
-    .stat-lbl { font-size:11px; color:var(--ink-2); text-transform:uppercase; letter-spacing:0.5px; }
+    .stat-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
+    .stat-val { font-size:22px; font-weight:700; color:#fff; letter-spacing: -0.5px; }
+    .stat-lbl { font-size:11px; color:var(--acc); text-transform:uppercase; letter-spacing:1px; font-weight: 600; opacity: 0.8; }
 
     /* --- TABS SYSTEM --- */
-    .nav-tabs { display:flex; gap:4px; border-bottom:1px solid var(--grid); background:rgba(0,0,0,0.2); padding:0 16px; margin-bottom:16px; border-radius:12px; }
-    .nav-tab {
-      padding:12px 20px; cursor:pointer; border-bottom:2px solid transparent; color:var(--ink-2); font-weight:600; font-size:13px; transition:all 0.2s;
+    .nav-tabs { 
+      display:flex; gap:6px; 
+      border-bottom:1px solid var(--panel-border); 
+      background: rgba(0,0,0,0.2); 
+      padding:6px; margin-bottom:20px; border-radius:12px; 
     }
-    .nav-tab:hover { color:var(--ink); background:rgba(255,255,255,0.02); }
-    .nav-tab.active { color:var(--acc); border-bottom-color:var(--acc); background:linear-gradient(0deg, rgba(76,201,240,0.1), transparent); }
-    .tab-content { display:none; animation: fadeIn 0.3s ease; }
+    .nav-tab {
+      padding:10px 24px; cursor:pointer; 
+      border-radius: 8px; border-bottom: none;
+      color:var(--ink-2); font-weight:500; font-size:13px; 
+      transition:all 0.2s;
+    }
+    .nav-tab:hover { color:var(--ink); background:rgba(255,255,255,0.05); }
+    .nav-tab.active { 
+      color: #fff; 
+      background: var(--acc); 
+      box-shadow: 0 4px 12px var(--acc-glow);
+      font-weight: 600;
+    }
+    .tab-content { display:none; animation: fadeScale 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .tab-content.active { display:block; }
-    @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeScale { 
+      from { opacity:0; transform:scale(0.98); } 
+      to { opacity:1; transform:scale(1); } 
+    }
 
     /* --- DB & MODAL --- */
-    .db-row { display:grid; grid-template-columns: 1fr 2fr 80px 80px 100px 40px; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--grid); }
+    .db-row { display:grid; grid-template-columns: 1fr 2fr 80px 80px 100px 40px; gap:8px; align-items:center; padding:12px 0; border-bottom:1px solid var(--grid); }
     .modal-overlay { 
       position:fixed; top:0; left:0; width:100%; height:100%; 
-      background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
+      background:rgba(0,0,0,0.6); backdrop-filter:blur(8px);
       z-index: var(--z-modal); display:flex; align-items:center; justify-content:center;
       opacity:0; pointer-events:none; transition:opacity 0.2s ease-out;
     }
     .modal-overlay.active { opacity:1; pointer-events:all; }
     .modal { 
-      background:#161f2b; border:1px solid var(--grid); 
-      padding:24px; border-radius:16px; max-width:420px; width:90%; 
-      box-shadow:0 25px 50px rgba(0,0,0,0.6); 
-      transform:translateY(20px); transition:transform 0.2s ease-out;
-      display:flex; flex-direction:column; gap:12px;
+      background:#1e293b; border:1px solid var(--panel-border); 
+      padding:32px; border-radius:24px; max-width:480px; width:90%; 
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
+      transform:translateY(20px) scale(0.95); transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display:flex; flex-direction:column; gap:16px;
     }
-    .modal-overlay.active .modal { transform:translateY(0); }
-    .catalog-list { max-height:300px; overflow-y:auto; border:1px solid var(--grid); border-radius:8px; margin-top:8px; }
-    .catalog-item { padding:8px; border-bottom:1px solid var(--grid); cursor:pointer; display:flex; justify-content:space-between; }
-    .catalog-item:hover { background:var(--muted); }
+    .modal-overlay.active .modal { transform:translateY(0) scale(1); }
+    .catalog-list { max-height:300px; overflow-y:auto; border:1px solid var(--grid); border-radius:12px; margin-top:8px; background: rgba(0,0,0,0.2); }
+    .catalog-item { padding:12px 16px; border-bottom:1px solid var(--grid); cursor:pointer; display:flex; justify-content:space-between; transition: background 0.1s; }
+    .catalog-item:hover { background: rgba(56, 189, 248, 0.1); }
 
-    /* --- ABACI --- */
+    /* --- ABACHI --- */
     #abachi-tabs { display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; border-bottom:1px solid var(--grid); margin-bottom:12px; }
     #abachi-tabs button { white-space:nowrap; }
     #abachi-tabs button.active { background:var(--acc); color:#000; border-color:var(--acc); }
@@ -178,20 +285,20 @@
 
     /* --- FLOAT BTN --- */
     #btn-calc-fixed {
-      position:fixed; bottom:24px; right:24px; z-index:999;
-      background:var(--acc); color:#000; 
-      width:56px; height:56px; border-radius:50%;
+      position:fixed; bottom:32px; right:32px; z-index:999;
+      background:var(--acc); color:#0f172a; 
+      width:64px; height:64px; border-radius:50%;
       display:flex; align-items:center; justify-content:center;
-      font-size:24px; box-shadow:0 10px 30px rgba(76,201,240,0.4);
-      border:none; cursor:pointer; transition:transform 0.2s;
+      font-size:24px; box-shadow:0 10px 30px var(--acc-glow);
+      border:none; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s;
     }
-    #btn-calc-fixed:hover { transform:scale(1.1); }
+    #btn-calc-fixed:hover { transform:scale(1.1) rotate(90deg); box-shadow:0 15px 40px var(--acc-glow); }
 
     /* --- PRINT --- */
     @media print {
       body { background: #fff !important; color: #000 !important; font-family: "Times New Roman", serif; font-size: 11pt; }
       .wrap { max-width: 100% !important; margin: 0; padding: 0; }
-      .card { border: none !important; box-shadow: none !important; border-radius: 0 !important; background: none !important; margin-bottom: 20px !important; }
+      .card { border: none !important; box-shadow: none !important; border-radius: 0 !important; background: none !important; margin-bottom: 20px !important; backdrop-filter: none !important; }
       .topbar button, .cost-head-sticky, #btn-calc-fixed, .modal-overlay, #abachi-card, #scenarios-card, .stat-card, canvas, #btn-save-as, .nav-tabs { display: none !important; }
       .topbar { border:none; box-shadow:none; background:none; padding:0; margin-bottom:10px; }
       .projbar { border-top: 1px solid #000; padding-top: 10px; margin-top: 10px; }
@@ -238,12 +345,12 @@
 <div class="wrap">
 
   <!-- HEADER -->
-  <div class="card" style="padding:12px 20px; background: linear-gradient(90deg, #0f172a, #1e293b); margin-bottom:12px;">
+  <div class="card" style="padding:20px 24px; background: linear-gradient(90deg, #0f172a, #334155); margin-bottom:24px;">
     <div class="h" style="justify-content:space-between">
       <div class="h">
-        <div style="background:var(--acc); color:#000; font-weight:800; padding:4px 10px; border-radius:6px; font-size:12px;">V5.5 ULTIMATE</div>
+        <div style="background:var(--acc); color:#0f172a; font-weight:800; padding:4px 12px; border-radius:20px; font-size:11px; box-shadow: 0 0 10px var(--acc-glow);">V5.5 ULTIMATE</div>
         <div>
-          <h1 style="font-size:22px; margin:0;">Analisi Costo & Controllo</h1>
+          <h1 style="font-size:24px; margin:0;">Analisi Costo & Controllo</h1>
           <div class="small muted">Piattaforma Gestionale Completa</div>
         </div>
       </div>
@@ -298,7 +405,7 @@
       </div>
 
       <!-- GEOMETRIA ELEMENTO -->
-      <div class="card pad" style="margin-bottom:16px;">
+      <div class="card pad" style="margin-bottom:20px;">
         <div class="h" style="justify-content:space-between">
            <h2>Dati Elemento</h2>
            <button id="btn-geom-calc" class="btn small btn-icon" title="Calcolatrice Geometrica Avanzata">📐</button>
@@ -340,11 +447,11 @@
       </div>
 
       <!-- TABELLA COSTI SCORREVOLE -->
-      <div class="card pad table-container" style="margin-bottom:16px;">
+      <div class="card pad table-container" style="margin-bottom:20px;">
         <div class="cost-head-sticky">
            <div class="h">
              <h2>Voci di Costo</h2>
-             <select id="filter-cat" style="width:180px; height:32px; padding:0 8px;">
+             <select id="filter-cat" style="width:180px; height:36px; padding:0 12px;">
                 <option value="">Tutte le categorie</option>
                 <option>Materiali</option>
                 <option>Manodopera</option>
@@ -355,7 +462,7 @@
            </div>
            <div class="h">
              <button id="btn-catalog" class="btn-acc">📚 Catalogo</button>
-             <div style="width:1px;height:20px;background:var(--grid)"></div>
+             <div style="width:1px;height:24px;background:var(--grid)"></div>
              <button id="add-row" class="btn">Aggiungi</button>
              <button id="dup-row" class="btn">Duplica</button>
              <button id="del-row" class="btn-warn">Elimina</button>
@@ -396,20 +503,20 @@
                  <td></td>
              </tr>
              <tr>
-                 <td colspan="7" class="right" style="font-size:16px; color:var(--acc)">COSTO DIRETTO DI PRODUZIONE</td>
-                 <td class="right num" id="tot-diretto" style="font-size:16px; color:var(--acc); border-top:1px solid var(--grid)">0,00 €</td>
+                 <td colspan="7" class="right" style="font-size:16px; color:var(--acc); font-weight:600">COSTO DIRETTO DI PRODUZIONE</td>
+                 <td class="right num" id="tot-diretto" style="font-size:18px; color:var(--acc); border-top:1px solid var(--grid); font-weight:700">0,00 €</td>
                  <td></td>
              </tr>
            </tfoot>
         </table>
-        <div class="small muted" style="margin-top:8px;">
+        <div class="small muted" style="margin-top:12px; font-style: italic;">
            Doppio click sulle celle per modificare. "K o.c." è il coefficiente opere complementari.
         </div>
       </div>
 
       <!-- RIEPILOGO E PARAMETRI -->
       <div class="card pad">
-         <div class="row" style="grid-template-columns: 1fr 1fr; gap:24px;">
+         <div class="row" style="grid-template-columns: 1fr 1fr; gap:40px;">
             <div class="col">
                <h2>Parametri economici</h2>
                <div class="kv-grid">
@@ -420,28 +527,28 @@
                   <label>Margine di profitto (%)</label><input id="pct-margine" class="right" value="30" />
                   <label>IVA (%)</label><input id="pct-iva" class="right" value="22" />
                   <label>Sconto (%)</label><input id="pct-sconto" class="right" value="0" />
-                  <div class="hr" style="grid-column:span 2; margin:8px 0;"></div>
+                  <div class="hr" style="grid-column:span 2; margin:12px 0;"></div>
                   <label>Produzione/lotto (pezzi)</label><input id="pezzi" class="right" value="1" />
                   <label>Metri lineari per pezzo (m)</label><input id="ml-per-pezzo" class="right" value="0" />
                   <label>Metri quadrati per pezzo (m²)</label><input id="mq-per-pezzo" class="right" value="0" />
                </div>
             </div>
 
-            <div class="col" style="border-left:1px solid var(--grid); padding-left:24px;">
+            <div class="col" style="border-left:1px solid var(--grid); padding-left:40px;">
                <h2>Riepilogo</h2>
                <div class="kv-grid">
                   <label>Costo diretto</label><div class="val" id="r-dir">0,00 €</div>
                   <label class="muted small">+ Spese generali</label><div class="val" id="r-gg">0,00 €</div>
                   <label class="muted small">+ Imprevisti</label><div class="val" id="r-imp">0,00 €</div>
-                  <label style="color:var(--ink); font-weight:bold">Subtotale industriale</label><div class="val" id="r-sub" style="font-weight:bold; border-top:1px solid var(--grid)">0,00 €</div>
+                  <label style="color:var(--ink); font-weight:bold">Subtotale industriale</label><div class="val" id="r-sub" style="font-weight:bold; border-top:1px solid var(--grid); color: var(--acc)">0,00 €</div>
                   <label class="muted small">+ Provvigione (ricarico)</label><div class="val" id="r-provv">0,00 €</div>
                   <label class="muted small">+ Utile</label><div class="val" id="r-ut">0,00 €</div>
                   <label class="muted small">+ Margine di profitto (ricarico)</label><div class="val" id="r-margine">0,00 €</div>
                   <label style="color:var(--ink)">Prezzo netto</label><div class="val" id="r-netto">0,00 €</div>
                   <label class="muted small">+ IVA</label><div class="val" id="r-iva">0,00 €</div>
-                  <label style="font-size:18px; font-weight:bold; color:var(--ink)">Prezzo totale</label><div class="val" id="r-totale" style="font-size:18px; font-weight:bold; color:var(--ink)">0,00 €</div>
+                  <label style="font-size:18px; font-weight:bold; color:var(--ink)">Prezzo totale</label><div class="val" id="r-totale" style="font-size:18px; font-weight:bold; color:var(--ok)">0,00 €</div>
                   <label class="muted small">– Sconto</label><div class="val" id="r-sconto">0,00 €</div>
-                  <label style="font-size:18px; font-weight:bold; color:var(--ink)">Totale scontato</label><div class="val" id="r-totale-sconto" style="font-size:18px; font-weight:bold; color:var(--ink)">0,00 €</div>
+                  <label style="font-size:18px; font-weight:bold; color:var(--ink)">Totale scontato</label><div class="val" id="r-totale-sconto" style="font-size:18px; font-weight:bold; color:var(--ok)">0,00 €</div>
                   <label class="muted small">Margine commessa (%)</label><div class="val" id="r-margine-commessa">0,00 %</div>
                </div>
                <div class="hr"></div>
@@ -457,11 +564,11 @@
       </div>
 
       <!-- STATISTICHE E GRAFICI (Con Simulatore "What-If" POTENZIATO) -->
-      <div class="card pad" style="margin-top:16px;">
+      <div class="card pad" style="margin-top:20px;">
          <div class="h" style="justify-content:space-between">
             <h2>Statistiche & Simulazione</h2>
-            <div class="pill small muted" style="border:1px solid var(--warn); padding:4px 8px; border-radius:4px; color:var(--warn)">
-               Simulazione attiva: Costi materiali <span id="sim-display">+0%</span>
+            <div class="pill small muted" style="border:1px solid var(--warn); padding:4px 12px; border-radius:20px; color:var(--warn); background: rgba(251, 191, 36, 0.1);">
+               Simulazione attiva: Costi materiali <span id="sim-display" style="font-weight:bold">+0%</span>
             </div>
          </div>
          <div class="row">
@@ -472,10 +579,10 @@
             </div>
             <div class="col" style="grid-column: span 8;">
                <!-- Slider What-If Potenziato con Elenco Voci Specifiche -->
-               <div style="background:#192233; padding:12px; border-radius:12px; margin-bottom:12px; border:1px solid var(--grid)">
-                  <div class="h" style="justify-content:space-between; margin-bottom:4px">
+               <div style="background:rgba(0,0,0,0.2); padding:16px; border-radius:12px; margin-bottom:16px; border:1px solid var(--panel-border)">
+                  <div class="h" style="justify-content:space-between; margin-bottom:8px">
                      <label style="color:var(--warn)">Target Simulazione</label>
-                     <select id="sim-target" onchange="applySummary()" style="background:#0f1520; color:#fff; border:1px solid var(--grid); padding:4px; border-radius:4px; font-size:12px;">
+                     <select id="sim-target" onchange="applySummary()" style="background:rgba(0,0,0,0.4); color:#fff; border:1px solid var(--grid); padding:6px; border-radius:6px; font-size:12px;">
                         <option value="all">Tutto (Globale)</option>
                         <option value="mat">Categoria: Materiali</option>
                         <option value="man">Categoria: Manodopera</option>
@@ -486,12 +593,12 @@
                         <option value="trefolo">Solo Trefolo</option>
                         <option value="trasporti_voce">Solo Trasporti (Voce)</option>
                      </select>
-                     <span id="sim-val" style="font-weight:bold; color:var(--warn)">0%</span>
+                     <span id="sim-val" style="font-weight:bold; color:var(--warn); font-size: 14px;">0%</span>
                   </div>
-                  <input type="range" id="sim-slider" min="-20" max="50" value="0" style="width:100%; accent-color:var(--warn)">
-                  <div class="small muted">Sposta per vedere come cambia il margine variando solo la voce selezionata.</div>
+                  <input type="range" id="sim-slider" min="-20" max="50" value="0" style="width:100%; accent-color:var(--warn); height: 4px;">
+                  <div class="small muted" style="margin-top:4px">Sposta per vedere come cambia il margine variando solo la voce selezionata.</div>
                </div>
-               <div class="row" style="margin-bottom:12px;">
+               <div class="row" style="margin-bottom:16px;">
                   <div class="col" style="grid-column: span 4">
                      <div class="stat-card">
                         <span class="stat-lbl">Incidenza Manodopera</span><span class="stat-val" id="stat-inc-man">0%</span>
@@ -516,19 +623,19 @@
       </div>
 
       <!-- TOOLBAR AZIONI -->
-      <div class="card pad h" style="margin-top:16px; justify-content:space-between; flex-wrap:wrap">
+      <div class="card pad h" style="margin-top:20px; justify-content:space-between; flex-wrap:wrap">
          <div class="h">
            <button id="btn-reset" class="btn">Nuovo / Pulisci</button>
            <button id="btn-seed" class="btn">Ricarica Default</button>
            <button id="btn-save-as" class="btn">Salva HTML</button>
            <div style="width:1px; height:24px; background:var(--grid)"></div>
-           <div class="pill h" style="background:#151d28; padding:4px 8px; border-radius:8px; border:1px solid var(--grid)">
+           <div class="pill h" style="background:rgba(0,0,0,0.2); padding:6px 12px; border-radius:20px; border:1px solid var(--panel-border)">
               <span class="small muted">Scenari:</span>
-              <button onclick="saveScenario('A')" class="btn small">💾 A</button>
-              <button onclick="loadScenario('A')" class="btn small">📂 A</button>
+              <button onclick="saveScenario('A')" class="btn small" style="padding:4px 10px">💾 A</button>
+              <button onclick="loadScenario('A')" class="btn small" style="padding:4px 10px">📂 A</button>
               <div style="width:1px; height:16px; background:var(--grid)"></div>
-              <button onclick="saveScenario('B')" class="btn small">💾 B</button>
-              <button onclick="loadScenario('B')" class="btn small">📂 B</button>
+              <button onclick="saveScenario('B')" class="btn small" style="padding:4px 10px">💾 B</button>
+              <button onclick="loadScenario('B')" class="btn small" style="padding:4px 10px">📂 B</button>
            </div>
          </div>
          <div class="h">
@@ -540,7 +647,7 @@
       </div>
 
       <!-- ABACHI HIDDEN -->
-      <div class="card pad" id="abachi-card" style="margin-top:16px; display:none">
+      <div class="card pad" id="abachi-card" style="margin-top:20px; display:none">
          <div class="h" style="justify-content:space-between">
             <h2>Abachi Revit Importati</h2>
             <button onclick="document.getElementById('abachi-card').style.display='none'" class="btn small">Chiudi</button>
@@ -548,7 +655,7 @@
          <div id="abachi-tabs"></div>
          <div id="abachi-host"></div>
       </div>
-      <div class="muted small right" style="margin-top:16px">V 5.5 Ultimate - Full DB</div>
+      <div class="muted small right" style="margin-top:20px; opacity: 0.5;">V 5.5 Ultimate - Full DB</div>
       <div class="footer-print">Documento generato automaticamente - Analisi Costi V5.5</div>
   </div>
 
@@ -557,10 +664,10 @@
      <div class="row">
         <!-- KPIs -->
         <div class="col" style="grid-column: span 12">
-           <div class="row" style="margin-bottom:16px;">
-              <div class="col" style="grid-column: span 3"><div class="stat-card"><span class="stat-lbl">Margine Contribuzione</span><span class="stat-val text-ok" id="bi-mc">0.00 €</span></div></div>
-              <div class="col" style="grid-column: span 3"><div class="stat-card"><span class="stat-lbl">Break-even (Pezzi)</span><span class="stat-val text-warn" id="bi-bep">0</span></div></div>
-              <div class="col" style="grid-column: span 3"><div class="stat-card"><span class="stat-lbl">ROI Stimato</span><span class="stat-val text-acc" id="bi-roi">0%</span></div></div>
+           <div class="row" style="margin-bottom:20px;">
+              <div class="col" style="grid-column: span 3"><div class="stat-card"><span class="stat-lbl" style="color:var(--ok)">Margine Contribuzione</span><span class="stat-val text-ok" id="bi-mc" style="color:var(--ok)">0.00 €</span></div></div>
+              <div class="col" style="grid-column: span 3"><div class="stat-card"><span class="stat-lbl" style="color:var(--warn)">Break-even (Pezzi)</span><span class="stat-val text-warn" id="bi-bep" style="color:var(--warn)">0</span></div></div>
+              <div class="col" style="grid-column: span 3"><div class="stat-card"><span class="stat-lbl" style="color:var(--acc)">ROI Stimato</span><span class="stat-val text-acc" id="bi-roi" style="color:var(--acc)">0%</span></div></div>
               <div class="col" style="grid-column: span 3"><div class="stat-card"><span class="stat-lbl">Costi Fissi (Est.)</span><span class="stat-val" id="bi-fixed">0.00 €</span></div></div>
            </div>
         </div>
@@ -592,8 +699,8 @@
                  <h2>Database Listini</h2>
                  <button class="btn-primary" onclick="addDbItem()">+ Aggiungi Voce</button>
               </div>
-              <div class="db-row" style="font-weight:bold; color:var(--acc)"><div>Categoria</div><div>Descrizione</div><div class="right">UM</div><div class="right">Prezzo</div><div class="right">K %</div><div></div></div>
-              <div id="db-list" style="max-height:500px; overflow-y:auto;"></div>
+              <div class="db-row" style="font-weight:bold; color:var(--acc); border-bottom: 2px solid var(--grid);"><div>Categoria</div><div>Descrizione</div><div class="right">UM</div><div class="right">Prezzo</div><div class="right">K %</div><div></div></div>
+              <div id="db-list" style="max-height:500px; overflow-y:auto; padding-right: 8px;"></div>
            </div>
         </div>
         <div class="col" style="grid-column: span 4">
@@ -612,11 +719,11 @@
            <div class="card pad">
               <h3>Checklist Controllo</h3>
               <div id="checklist-container">
-                 <label style="display:block; margin:8px 0;"><input type="checkbox" onchange="updateChecklist()"> Verifica quote geometriche</label>
-                 <label style="display:block; margin:8px 0;"><input type="checkbox" onchange="updateChecklist()"> Aggiornamento prezzi acciaio</label>
-                 <label style="display:block; margin:8px 0;"><input type="checkbox" onchange="updateChecklist()"> Inclusione sfridi (3-5%)</label>
-                 <label style="display:block; margin:8px 0;"><input type="checkbox" onchange="updateChecklist()"> Verifica trasporti eccezionali</label>
-                 <label style="display:block; margin:8px 0;"><input type="checkbox" onchange="updateChecklist()"> Approvazione Responsabile</label>
+                 <label style="display:block; margin:12px 0; font-size:13px; display:flex; align-items:center; gap:8px;"><input type="checkbox" onchange="updateChecklist()" style="width:20px; height:20px;"> Verifica quote geometriche</label>
+                 <label style="display:block; margin:12px 0; font-size:13px; display:flex; align-items:center; gap:8px;"><input type="checkbox" onchange="updateChecklist()" style="width:20px; height:20px;"> Aggiornamento prezzi acciaio</label>
+                 <label style="display:block; margin:12px 0; font-size:13px; display:flex; align-items:center; gap:8px;"><input type="checkbox" onchange="updateChecklist()" style="width:20px; height:20px;"> Inclusione sfridi (3-5%)</label>
+                 <label style="display:block; margin:12px 0; font-size:13px; display:flex; align-items:center; gap:8px;"><input type="checkbox" onchange="updateChecklist()" style="width:20px; height:20px;"> Verifica trasporti eccezionali</label>
+                 <label style="display:block; margin:12px 0; font-size:13px; display:flex; align-items:center; gap:8px;"><input type="checkbox" onchange="updateChecklist()" style="width:20px; height:20px;"> Approvazione Responsabile</label>
               </div>
            </div>
         </div>
@@ -624,7 +731,7 @@
            <div class="card pad" style="align-items:center; justify-content:center;">
               <h3>Stato Completamento</h3>
               <div style="height:200px; width:200px;"><canvas id="checklistChart"></canvas></div>
-              <div id="checklist-text" style="font-size:24px; font-weight:bold; margin-top:10px;">0%</div>
+              <div id="checklist-text" style="font-size:32px; font-weight:bold; margin-top:16px; color: var(--acc);">0%</div>
            </div>
         </div>
      </div>
@@ -940,17 +1047,25 @@ function updateChart(id, type, labels, data, complex=false, colors=null) {
    const ctx = document.getElementById(id).getContext('2d');
    let scales = {};
    let idxAxis = 'x';
-   if (type === 'bar') { idxAxis = 'y'; scales = { x: { beginAtZero: true } }; } 
-   else if (type === 'line') { scales = { y: { beginAtZero: true } }; } 
-   else if (type === 'radar') { scales = { r: { beginAtZero: true, grid: { color: '#334155' }, ticks: { display: false, backdropColor: 'transparent' } } }; }
+   if (type === 'bar') { idxAxis = 'y'; scales = { x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' } } }; } 
+   else if (type === 'line') { scales = { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { color: 'rgba(255,255,255,0.05)' } } }; } 
+   else if (type === 'radar') { scales = { r: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, pointLabels: { color: '#e2e8f0' }, ticks: { display: false, backdropColor: 'transparent' } } }; }
    const cfg = {
       type: type,
       data: {
          labels: labels,
          datasets: complex ? data.map(d=>({label:d.l, data:d.d, borderColor:d.c, backgroundColor:d.c, tension:0.1})) : 
-         [{ data: data, backgroundColor: colors || ['#4cc9f0','#f59e0b','#2dd4bf','#a855f7'], borderWidth:0, borderRadius:4 }]
+         [{ data: data, backgroundColor: colors || ['#38bdf8','#fbbf24','#4ade80','#a855f7'], borderWidth:0, borderRadius:6 }]
       },
-      options: { indexAxis: idxAxis, responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display: complex || type==='doughnut' } }, scales: scales }
+      options: { 
+         indexAxis: idxAxis, 
+         responsive:true, 
+         maintainAspectRatio:false, 
+         plugins:{ 
+             legend:{ display: complex || type==='doughnut', labels: { color: '#cbd5e1' } } 
+         }, 
+         scales: scales 
+      }
    };
    charts[id] = new Chart(ctx, cfg);
 }
