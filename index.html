@@ -1085,6 +1085,19 @@ window.seedDefaults = () => {
    applySummary();
 }
 
+// --- NEW LISTENER BLOCK ---
+// Attach listeners to inputs for real-time updates
+const inputsToWatch = [
+  'job-name', 'job-date', 'sup-mont', 'sup-pan', 'el-type', 'el-desc',
+  'pct-gg', 'pct-imp', 'pct-provv', 'pct-ut', 'pct-margine', 'pct-iva', 'pct-sconto',
+  'pezzi', 'ml-per-pezzo', 'mq-per-pezzo',
+  'len', 'wid', 'hei', 'vol'
+];
+inputsToWatch.forEach(id => {
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('input', applySummary);
+});
+
 // --- INIT ---
 window.onload = () => {
    // Restore or Seed
