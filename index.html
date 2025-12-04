@@ -659,32 +659,46 @@
       <div class="footer-print">Documento generato automaticamente - Analisi Costi V5.5</div>
   </div>
 
-  <!-- TAB 2: BUSINESS INTELLIGENCE (INTEGRATED) -->
+  <!-- TAB 2: BUSINESS INTELLIGENCE (ENHANCED) -->
   <div id="tab-bi" class="tab-content">
      <div class="row">
-        <!-- KPIs -->
+        <!-- KPIs ROW 1 -->
         <div class="col" style="grid-column: span 12">
-           <div class="row" style="margin-bottom:20px;">
-              <div class="col" style="grid-column: span 3"><div class="stat-card"><span class="stat-lbl" style="color:var(--ok)">Margine Contribuzione</span><span class="stat-val text-ok" id="bi-mc" style="color:var(--ok)">0.00 €</span></div></div>
-              <div class="col" style="grid-column: span 3"><div class="stat-card"><span class="stat-lbl" style="color:var(--warn)">Break-even (Pezzi)</span><span class="stat-val text-warn" id="bi-bep" style="color:var(--warn)">0</span></div></div>
-              <div class="col" style="grid-column: span 3"><div class="stat-card"><span class="stat-lbl" style="color:var(--acc)">ROI Stimato</span><span class="stat-val text-acc" id="bi-roi" style="color:var(--acc)">0%</span></div></div>
-              <div class="col" style="grid-column: span 3"><div class="stat-card"><span class="stat-lbl">Costi Fissi (Est.)</span><span class="stat-val" id="bi-fixed">0.00 €</span></div></div>
+           <div class="row" style="margin-bottom:10px;">
+              <div class="col" style="grid-column: span 2"><div class="stat-card"><span class="stat-lbl" style="color:var(--ok)">Margine Contribuzione</span><span class="stat-val text-ok" id="bi-mc" style="color:var(--ok); font-size:18px">0.00 €</span></div></div>
+              <div class="col" style="grid-column: span 2"><div class="stat-card"><span class="stat-lbl" style="color:var(--warn)">Break-even (Pezzi)</span><span class="stat-val text-warn" id="bi-bep" style="color:var(--warn); font-size:18px">0</span></div></div>
+              <div class="col" style="grid-column: span 2"><div class="stat-card"><span class="stat-lbl" style="color:var(--acc)">ROI Stimato</span><span class="stat-val text-acc" id="bi-roi" style="color:var(--acc); font-size:18px">0%</span></div></div>
+              <div class="col" style="grid-column: span 2"><div class="stat-card"><span class="stat-lbl">Costi Fissi (Est.)</span><span class="stat-val" id="bi-fixed" style="font-size:18px">0.00 €</span></div></div>
+              <div class="col" style="grid-column: span 2"><div class="stat-card"><span class="stat-lbl" style="color:#a855f7">Margine Sicurezza</span><span class="stat-val" id="bi-safe" style="color:#a855f7; font-size:18px">0%</span></div></div>
+              <div class="col" style="grid-column: span 2"><div class="stat-card"><span class="stat-lbl">Markup Reale</span><span class="stat-val" id="bi-markup" style="font-size:18px">0%</span></div></div>
            </div>
         </div>
         
-        <!-- Radar Chart -->
+        <!-- CHART ROW 1 -->
         <div class="col" style="grid-column: span 6">
            <div class="card pad">
               <h3>Equilibrio Costi (Radar)</h3>
-              <div style="height:300px; position:relative;"><canvas id="radarChart"></canvas></div>
+              <div style="height:280px; position:relative;"><canvas id="radarChart"></canvas></div>
            </div>
         </div>
-        
-        <!-- BEP Chart -->
         <div class="col" style="grid-column: span 6">
            <div class="card pad">
               <h3>Analisi Break-even Point</h3>
-              <div style="height:300px; position:relative;"><canvas id="beChart"></canvas></div>
+              <div style="height:280px; position:relative;"><canvas id="beChart"></canvas></div>
+           </div>
+        </div>
+
+        <!-- CHART ROW 2 (NEW) -->
+        <div class="col" style="grid-column: span 7">
+           <div class="card pad">
+              <h3>Composizione del Prezzo (Waterfall)</h3>
+              <div style="height:280px; position:relative;"><canvas id="waterfallChart"></canvas></div>
+           </div>
+        </div>
+        <div class="col" style="grid-column: span 5">
+           <div class="card pad">
+              <h3>Marginalità Operativa</h3>
+              <div style="height:280px; position:relative;"><canvas id="profitabilityChart"></canvas></div>
            </div>
         </div>
      </div>
@@ -980,7 +994,7 @@ function applySummary() {
   const sorted = rowsData.sort((a,b)=>b.t-a.t).slice(0,5);
   updateChart('categoryBarChart', 'bar', sorted.map(x=>x.v.substring(0,15)), sorted.map(x=>x.t));
 
-  stats = { dir:diretto, mat:totMat, lab:totMan, ind:valGG+valIMP, netto, profit:valUT+valMarg+valProvv, fixed:fixedCost+valGG+valIMP };
+  stats = { dir:diretto, mat:totMat, lab:totMan, ind:valGG+valIMP, netto, profit:valUT+valMarg+valProvv, fixed:fixedCost+valGG+valIMP, iva: valIVA };
   saveToLocal();
 }
 
@@ -990,27 +1004,56 @@ document.getElementById('sim-slider').addEventListener('input', e => {
    applySummary();
 });
 
-// --- BI TAB UPDATES ---
+// --- BI TAB UPDATES (ENHANCED) ---
 function updateBiCharts() {
-   if(!stats.dir) applySummary();
+   // Force update from inputs to ensure consistency even if not switched recently
+   applySummary();
+   
    const pz = parseSmart(document.getElementById('pezzi').value)||1;
    const pricePerUnit = stats.netto / pz;
    const vc = stats.mat + stats.lab;
-   const cm = stats.netto - vc;
-   const fc = stats.fixed + (stats.dir * 0.05); 
+   const cm = stats.netto - vc; // Contribution Margin
+   const fc = stats.fixed + (stats.dir * 0.05); // Estimated fixed portion
+   
    const bep = (pricePerUnit - (vc/pz)) > 0 ? Math.ceil(fc / (pricePerUnit - (vc/pz))) : 0;
    const costBase = stats.ind + stats.dir;
    const roi = costBase>0 ? (stats.profit/costBase)*100 : 0;
+   
+   // New KPIs
+   const bep_val = bep * pricePerUnit;
+   const safetyMargin = stats.netto > 0 ? ((stats.netto - bep_val) / stats.netto) * 100 : 0;
+   const markup = stats.dir > 0 ? ((stats.netto - stats.dir) / stats.dir) * 100 : 0;
 
    document.getElementById('bi-mc').textContent = money(safe(cm/pz));
    document.getElementById('bi-bep').textContent = safe(bep);
    document.getElementById('bi-roi').textContent = safe(roi).toFixed(1)+'%';
    document.getElementById('bi-fixed').textContent = money(safe(fc));
+   document.getElementById('bi-safe').textContent = safe(safetyMargin).toFixed(1)+'%';
+   document.getElementById('bi-markup').textContent = safe(markup).toFixed(1)+'%';
 
+   // 1. Radar Chart (Existing)
    updateChart('radarChart', 'radar', ['Materiali','Manodopera','Indiretti','Profitto'], [stats.mat, stats.lab, stats.ind, stats.profit]);
+   
+   // 2. BEP Chart (Existing)
    const tgt = pz*2;
    updateChart('beChart', 'line', ['0','BEP','Target'], 
       [{l:'Ricavi',d:[0, safe(bep*pricePerUnit), safe(tgt*pricePerUnit)],c:'#2dd4bf'}, {l:'Costi',d:[safe(fc), safe(fc+(bep*(vc/pz))), safe(fc+(tgt*(vc/pz)))],c:'#ef4444'}], true);
+
+   // 3. Price Waterfall (New)
+   updateChart('waterfallChart', 'bar', 
+      ['Costo Diretto', 'Spese Generali', 'Imprevisti', 'Utile + Margine', 'Tasse (IVA)', 'Prezzo Finale'], 
+      [stats.dir, stats.ind * 0.8, stats.ind * 0.2, stats.profit, stats.iva, stats.netto + stats.iva], 
+      false, 
+      ['#38bdf8', '#fbbf24', '#f87171', '#4ade80', '#94a3b8', '#a855f7']
+   );
+
+   // 4. Profitability Doughnut (New)
+   updateChart('profitabilityChart', 'doughnut', 
+      ['Costi Totali', 'Margine Netto'], 
+      [costBase, stats.profit],
+      false,
+      ['#1e293b', '#4ade80']
+   );
 }
 
 // --- DB & CHECKLIST ---
@@ -1047,7 +1090,7 @@ function updateChart(id, type, labels, data, complex=false, colors=null) {
    const ctx = document.getElementById(id).getContext('2d');
    let scales = {};
    let idxAxis = 'x';
-   if (type === 'bar') { idxAxis = 'y'; scales = { x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' } } }; } 
+   if (type === 'bar') { idxAxis = 'x'; scales = { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { color: 'rgba(255,255,255,0.05)' } } }; } 
    else if (type === 'line') { scales = { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { color: 'rgba(255,255,255,0.05)' } } }; } 
    else if (type === 'radar') { scales = { r: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, pointLabels: { color: '#e2e8f0' }, ticks: { display: false, backdropColor: 'transparent' } } }; }
    const cfg = {
